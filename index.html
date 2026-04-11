@@ -7,149 +7,199 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        .card { background: white; border-radius: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .active-lie { background-color: #1d4ed8 !important; color: white !important; }
+        body { background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .active-lie { background-color: #1d4ed8 !important; color: white !important; font-weight: 800; }
+        button { touch-action: manipulation; } /* Prevents zoom-delays on mobile */
     </style>
 </head>
-<body class="p-4 font-sans text-slate-800 pb-24">
+<body class="p-4 font-sans text-slate-800">
 
     <div class="max-w-md mx-auto">
-        <header class="py-4 flex justify-between items-center">
+        <div class="flex justify-between items-center mb-6">
             <div>
                 <h1 class="text-xl font-black text-blue-700 uppercase">SG Analytics</h1>
-                <p id="hole-display" class="text-[10px] font-bold text-slate-400 uppercase">Hole 1</p>
+                <p id="label-hole" class="text-[10px] font-bold text-slate-400 uppercase">Hole 1</p>
             </div>
-            <div class="flex gap-1 bg-slate-200 p-1 rounded-lg">
-                <button onclick="changeView('entry')" id="tab-entry" class="text-[10px] font-bold px-4 py-2 rounded-md bg-white">ENTRY</button>
-                <button onclick="changeView('trends')" id="tab-trends" class="text-[10px] font-bold px-4 py-2 rounded-md">TRENDS</button>
+            <div class="flex bg-slate-200 p-1 rounded-lg">
+                <button type="button" id="nav-to-entry" class="text-[10px] font-bold px-4 py-2 rounded-md bg-white">ENTRY</button>
+                <button type="button" id="nav-to-trends" class="text-[10px] font-bold px-4 py-2 rounded-md">TRENDS</button>
             </div>
-        </header>
+        </div>
 
-        <div id="view-entry">
-            <div class="card p-6 mb-6 border-2 border-blue-50">
+        <div id="section-entry">
+            <div class="card p-6 mb-6">
                 <div class="grid grid-cols-3 gap-2 mb-4">
-                    <button onclick="setLie('Tee')" id="lie-Tee" class="bg-blue-600 text-white p-3 rounded-xl font-bold text-sm">Tee</button>
-                    <button onclick="setLie('Fairway')" id="lie-Fairway" class="bg-slate-100 p-3 rounded-xl font-bold text-sm">Fairway</button>
-                    <button onclick="setLie('Rough')" id="lie-Rough" class="bg-slate-100 p-3 rounded-xl font-bold text-sm">Rough</button>
-                    <button onclick="setLie('Green')" id="lie-Green" class="bg-slate-100 p-3 rounded-xl font-bold col-span-3 mt-1 text-[10px] uppercase">Green (Feet)</button>
+                    <button type="button" id="lie-Tee" class="lie-opt active-lie bg-slate-100 p-3 rounded-xl text-sm">Tee</button>
+                    <button type="button" id="lie-Fairway" class="lie-opt bg-slate-100 p-3 rounded-xl text-sm">Fairway</button>
+                    <button type="button" id="lie-Rough" class="lie-opt bg-slate-100 p-3 rounded-xl text-sm">Rough</button>
+                    <button type="button" id="lie-Green" class="lie-opt bg-slate-100 p-3 rounded-xl col-span-3 text-[10px] uppercase">Green (Feet)</button>
                 </div>
 
-                <input id="dist-field" type="number" inputmode="numeric" placeholder="Distance..." class="w-full text-4xl font-black border-b-4 border-slate-100 outline-none focus:border-blue-500 py-2 mb-6 text-center">
+                <input id="input-dist" type="number" inputmode="numeric" placeholder="Enter Distance" class="w-full text-4xl font-black border-b-4 border-slate-100 outline-none focus:border-blue-500 py-2 mb-6 text-center">
                 
                 <div class="space-y-3">
                     <div class="flex gap-2">
-                        <button onclick="recordShot()" class="flex-[4] bg-blue-700 text-white py-5 rounded-2xl font-black shadow-lg text-lg active:bg-blue-800 uppercase">Record Shot</button>
-                        <button onclick="undoShot()" class="flex-1 bg-slate-200 text-slate-600 flex items-center justify-center rounded-2xl active:bg-slate-300">
+                        <button type="button" id="action-record" class="flex-[4] bg-blue-700 text-white py-5 rounded-2xl font-black text-lg shadow-lg uppercase">Record Shot</button>
+                        <button type="button" id="action-undo" class="flex-1 bg-slate-200 text-slate-600 flex items-center justify-center rounded-2xl">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                         </button>
                     </div>
-                    <button onclick="markHoled()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black shadow-md uppercase active:bg-emerald-700">✓ Ball is Holed</button>
+                    <button type="button" id="action-holed" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase shadow-md">✓ Ball is Holed</button>
                 </div>
             </div>
 
-            <div id="shot-list-container" class="space-y-2"></div>
-            <button onclick="saveRoundToStorage()" id="save-round-btn" class="hidden w-full mt-8 bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase">Save Round</button>
+            <div id="display-list" class="space-y-2 pb-24"></div>
+            <button type="button" id="action-save" class="hidden fixed bottom-6 left-4 right-4 max-w-md mx-auto bg-emerald-700 text-white py-4 rounded-2xl font-black uppercase">Save Round</button>
         </div>
 
-        <div id="view-trends" class="hidden space-y-4">
-            <div class="card p-4"><canvas id="trendsChart"></canvas></div>
-            <div id="roadmap-panel" class="card p-5 bg-blue-800 text-white"></div>
-            <button onclick="clearAllData()" class="w-full text-[10px] font-bold text-slate-300 uppercase py-10">Wipe Data</button>
+        <div id="section-trends" class="hidden">
+            <div class="card p-4 mb-4"><canvas id="canvas-chart"></canvas></div>
+            <div id="display-roadmap" class="card p-5 bg-blue-800 text-white mb-4"></div>
+            <button type="button" id="action-clear" class="w-full text-[10px] font-bold text-slate-400 uppercase py-10">Wipe Data</button>
         </div>
     </div>
 
     <script>
-        let shotHistory = [];
-        let currentLie = 'Tee';
-        let currentHole = 1;
-        let myChart = null;
+        // Start after DOM loads
+        document.addEventListener('DOMContentLoaded', () => {
+            let data_shots = [];
+            let state_lie = 'Tee';
+            let state_hole = 1;
+            let chart_instance = null;
 
-        const baselineTable = {
-            'Tee': { 500: 4.6, 400: 4.3, 350: 4.1, 200: 3.6, 150: 3.3, 0: 0 },
-            'Fairway': { 500: 4.5, 400: 4.2, 300: 3.8, 200: 3.4, 150: 3.2, 100: 2.9, 50: 2.7, 20: 2.5, 0: 0 },
-            'Rough': { 500: 4.7, 400: 4.4, 300: 4.1, 200: 3.7, 150: 3.5, 100: 3.2, 50: 2.9, 20: 2.7, 0: 0 },
-            'Green': { 100: 2.5, 60: 2.3, 30: 2.0, 20: 1.85, 10: 1.6, 5: 1.3, 3: 1.1, 0: 0 }
-        };
+            const BASELINE = {
+                'Tee': { 500:4.6, 400:4.3, 350:4.1, 200:3.6, 150:3.3, 0:0 },
+                'Fairway': { 500:4.5, 400:4.2, 300:3.8, 200:3.4, 150:3.2, 100:2.9, 50:2.7, 20:2.5, 0:0 },
+                'Rough': { 500:4.7, 400:4.4, 300:4.1, 200:3.7, 150:3.5, 100:3.2, 50:2.9, 20:2.7, 0:0 },
+                'Green': { 100:2.5, 60:2.3, 30:2.0, 20:1.85, 10:1.6, 5:1.3, 3:1.1, 0:0 }
+            };
 
-        function setLie(l) {
-            currentLie = l;
-            ['Tee', 'Fairway', 'Rough', 'Green'].forEach(id => {
-                const btn = document.getElementById('lie-' + id);
-                btn.className = id === l ? 'bg-blue-600 text-white p-3 rounded-xl font-bold text-sm' : 'bg-slate-100 p-3 rounded-xl font-bold text-sm';
+            // Helpers
+            const getExp = (l, d) => {
+                const tbl = BASELINE[l];
+                const ks = Object.keys(tbl).map(Number).sort((a,b) => b-a);
+                if (d >= ks[0]) return tbl[ks[0]];
+                if (d <= ks[ks.length-1]) return tbl[ks[ks.length-1]];
+                for (let i=0; i<ks.length-1; i++) {
+                    if (d <= ks[i] && d >= ks[i+1]) {
+                        return tbl[ks[i+1]] + (tbl[ks[i]]-tbl[ks[i+1]]) * (d-ks[i+1]) / (ks[i]-ks[i+1]);
+                    }
+                }
+                return 2.5;
+            };
+
+            const render = () => {
+                const list = document.getElementById('display-list');
+                let lastH = 0;
+                list.innerHTML = data_shots.map(s => {
+                    let hStr = (s.hole !== lastH) ? `<div class="text-[10px] font-bold text-slate-400 uppercase mt-4 border-b">Hole ${s.hole}</div>` : "";
+                    lastH = s.hole;
+                    const sg = s.sg !== null ? (s.sg > 0 ? '+' : '') + s.sg.toFixed(2) : '--';
+                    const badge = s.holed ? '<span class="ml-2 bg-emerald-100 text-emerald-700 text-[8px] px-1 rounded">HOLED</span>' : '';
+                    return `${hStr}<div class="card p-3 flex justify-between items-center text-sm mt-1">
+                        <span><b class="text-blue-700 text-[10px] w-8 inline-block">${s.cat}</b> ${s.lie} (${s.dist})${badge}</span>
+                        <span class="font-bold">${sg}</span>
+                    </div>`;
+                }).join('');
+            };
+
+            // Lie Selection
+            document.querySelectorAll('.lie-opt').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state_lie = btn.id.split('-')[1];
+                    document.querySelectorAll('.lie-opt').forEach(b => b.classList.remove('active-lie'));
+                    btn.classList.add('active-lie');
+                });
             });
-            if(l === 'Green') document.getElementById('lie-Green').className += ' col-span-3 mt-1 text-[10px] uppercase';
-        }
 
-        function getExpectedValue(l, d) {
-            const data = baselineTable[l];
-            const sortedKeys = Object.keys(data).map(Number).sort((a,b) => b-a);
-            if (d >= sortedKeys[0]) return data[sortedKeys[0]];
-            if (d <= sortedKeys[sortedKeys.length-1]) return data[sortedKeys[sortedKeys.length-1]];
-            for (let i=0; i<sortedKeys.length-1; i++) {
-                if (d <= sortedKeys[i] && d >= sortedKeys[i+1]) {
-                    const d1=sortedKeys[i], d2=sortedKeys[i+1], v1=data[d1], v2=data[d2];
-                    return v2 + (v1-v2) * (d-d2) / (d1-d2);
+            // RECORD
+            document.getElementById('action-record').addEventListener('click', () => {
+                const input = document.getElementById('input-dist');
+                if (!input.value) return;
+                const d = parseFloat(input.value);
+                const ex = getExp(state_lie, d);
+                const ct = (state_lie === 'Tee') ? 'OTT' : (state_lie === 'Green' ? 'PUT' : (d <= 100 ? 'SHG' : 'APP'));
+
+                if (data_shots.length > 0) {
+                    const prev = data_shots[data_shots.length-1];
+                    if (!prev.holed) prev.sg = prev.exp - ex - 1;
                 }
-            }
-            return 2.5;
-        }
+                data_shots.push({ lie: state_lie, dist: d, exp: ex, cat: ct, sg: null, hole: state_hole, holed: false });
+                input.value = '';
+                document.getElementById('action-save').classList.remove('hidden');
+                render();
+            });
 
-        function recordShot() {
-            const f = document.getElementById('dist-field');
-            if (!f.value) return;
-            const dist = parseFloat(f.value);
-            const exp = getExpectedValue(currentLie, dist);
-            let category = (currentLie === 'Tee') ? 'OTT' : (currentLie === 'Green' ? 'PUT' : (dist <= 100 ? 'SHG' : 'APP'));
+            // HOLED
+            document.getElementById('action-holed').addEventListener('click', () => {
+                if (data_shots.length === 0) return;
+                const last = data_shots[data_shots.length-1];
+                if (last.holed) return;
+                last.sg = last.exp - 0 - 1;
+                last.holed = true;
+                state_hole++;
+                document.getElementById('label-hole').innerText = `Hole ${state_hole}`;
+                document.getElementById('lie-Tee').click(); // Reset to Tee
+                render();
+            });
 
-            if (shotHistory.length > 0) {
-                const prev = shotHistory[shotHistory.length - 1];
-                if (!prev.isHoled) prev.sg = prev.expectedValue - exp - 1;
-            }
-
-            shotHistory.push({ lie: currentLie, distance: dist, expectedValue: exp, category, sg: null, hole: currentHole, isHoled: false });
-            f.value = '';
-            document.getElementById('save-round-btn').classList.remove('hidden');
-            updateUI();
-        }
-
-        function markHoled() {
-            if (shotHistory.length === 0) return;
-            const last = shotHistory[shotHistory.length - 1];
-            if (last.isHoled) return;
-
-            last.sg = last.expectedValue - 0 - 1;
-            last.isHoled = true;
-
-            currentHole++;
-            document.getElementById('hole-display').innerText = `Hole ${currentHole}`;
-            setLie('Tee');
-            updateUI();
-        }
-
-        function undoShot() {
-            if (shotHistory.length === 0) return;
-            const popped = shotHistory.pop();
-            if (popped.isHoled) {
-                currentHole--;
-                document.getElementById('hole-display').innerText = `Hole ${currentHole}`;
-            }
-            if (shotHistory.length > 0) shotHistory[shotHistory.length-1].sg = null;
-            updateUI();
-        }
-
-        function updateUI() {
-            const container = document.getElementById('shot-list-container');
-            let holeLabel = 0;
-            container.innerHTML = shotHistory.map(s => {
-                let hHtml = "";
-                if (s.hole !== holeLabel) {
-                    hHtml = `<div class="text-[10px] font-bold text-slate-400 uppercase mt-4 border-b">Hole ${s.hole}</div>`;
-                    holeLabel = s.hole;
+            // UNDO
+            document.getElementById('action-undo').addEventListener('click', () => {
+                if (data_shots.length === 0) return;
+                const popped = data_shots.pop();
+                if (popped.holed) {
+                    state_hole--;
+                    document.getElementById('label-hole').innerText = `Hole ${state_hole}`;
                 }
-                const sgText = s.sg !== null ? (s.sg > 0 ? '+' : '') + s.sg.toFixed(2) : '--';
-                const sgColor = s.sg > 0 ? 'text-emerald-600' : (s.sg < 0 ? 'text-rose-500' : 'text-slate-400');
-                const badge = s.isHoled ? '<span class="ml-2 bg-emerald-100 text-emerald-700 text-[8px] px-1 rounded">HOLED</span>' : '';
+                if (data_shots.length > 0) data_shots[data_shots.length-1].sg = null;
+                render();
+            });
+
+            // SAVE
+            document.getElementById('action-save').addEventListener('click', () => {
+                const hist = JSON.parse(localStorage.getItem('sg_history_v3') || '[]');
+                const total = { OTT:0, APP:0, SHG:0, PUT:0 };
+                data_shots.forEach(s => { if(s.sg !== null) total[s.cat] += s.sg; });
+                hist.push(total);
+                localStorage.setItem('sg_history_v3', JSON.stringify(hist.slice(-20)));
+                data_shots = []; state_hole = 1;
+                document.getElementById('label-hole').innerText = `Hole 1`;
+                document.getElementById('action-save').classList.add('hidden');
+                render();
+                alert("Saved!");
+            });
+
+            // NAVIGATION
+            document.getElementById('nav-to-entry').addEventListener('click', () => {
+                document.getElementById('section-entry').classList.remove('hidden');
+                document.getElementById('section-trends').classList.add('hidden');
+                document.getElementById('nav-to-entry').classList.add('bg-white');
+                document.getElementById('nav-to-trends').classList.remove('bg-white');
+            });
+
+            document.getElementById('nav-to-trends').addEventListener('click', () => {
+                document.getElementById('section-entry').classList.add('hidden');
+                document.getElementById('section-trends').classList.remove('hidden');
+                document.getElementById('nav-to-entry').classList.remove('bg-white');
+                document.getElementById('nav-to-trends').classList.add('bg-white');
                 
-                return `${hHtml}<div class="card p-3 flex justify-between items-center text-sm mt-1">
-                    <span><b class="text-blue-700 w-8 inline-block text-
+                // Draw Chart
+                const hist = JSON.parse(localStorage.getItem('sg_history_v3') || '[]');
+                if (!hist.length) return;
+                const last = hist[hist.length-1];
+                const ctx = document.getElementById('canvas-chart').getContext('2d');
+                if (chart_instance) chart_instance.destroy();
+                chart_instance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Tee', 'Appr', 'Short', 'Putt'],
+                        datasets: [{ data: [last.OTT, last.APP, last.SHG, last.PUT], backgroundColor: ['#3b82f6', '#3b82f6', '#3b82f6', '#3b82f6'] }]
+                    },
+                    options: { plugins: { legend: { display: false } } }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
