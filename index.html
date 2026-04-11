@@ -123,17 +123,19 @@
         ui();
     }
 
-    function doHoled() {
-        if (shots.length === 0) return;
-        var last = shots[shots.length-1];
-        if (last.holed) return;
-        last.sg = last.ev - 1; 
-        last.holed = true;
-        hole++;
-        document.getElementById('h-label').innerText = 'Hole ' + hole;
-        setL('Tee');
-        ui();
-    }
+  function doHoled() {
+    if (shots.length === 0) return;
+    var last = shots[shots.length-1];
+    if (last.holed) return;
+    last.sg = last.ev - 1; 
+    last.holed = true;
+    
+    // We update the hole counter BEFORE calling ui() so it knows to collapse the hole
+    hole++;
+    document.getElementById('h-label').innerText = 'Hole ' + hole;
+    setL('Tee');
+    ui();
+}
 
     function doUndo() {
         if (shots.length === 0) return;
@@ -146,28 +148,51 @@
         ui();
     }
 
-    function ui() {
-        var list = document.getElementById('s-list');
-        var html = '';
-        var lh = 0;
-        for(var i=0; i<shots.length; i++) {
-            var s = shots[i];
-            if (s.hole !== lh) {
-                html += '<div class="text-[10px] font-bold text-slate-400 uppercase mt-6 border-b border-slate-200 pb-1">Hole ' + s.hole + '</div>';
-                lh = s.hole;
-            }
-            var isPos = s.sg > 0;
-            var isNeg = s.sg < 0;
-            var color = isPos ? 'text-emerald-600' : (isNeg ? 'text-rose-500' : 'text-slate-400');
-            var sgText = s.sg !== null ? (isPos ? '+' : '') + s.sg.toFixed(2) : '--';
-            var hb = s.holed ? '<span class="ml-2 bg-emerald-100 text-emerald-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase">Holed</span>' : '';
-            html += '<div class="card p-4 flex justify-between items-center text-sm mt-1.5">' +
-                '<span><b class="text-blue-700 text-[10px] w-8 inline-block font-black uppercase">' + s.cat + '</b> ' + s.lie + ' <span class="text-slate-400 ml-1">(' + s.dist + (s.lie==='Green'?'ft':'y') + ')</span>' + hb + '</span>' +
-                '<span class="font-black font-mono ' + color + '">' + sgText + '</span></div>';
+   function ui() {
+    var list = document.getElementById('s-list');
+    var html = '';
+    var holeData = {};
+
+    // Group shots by hole
+    shots.forEach(function(s) {
+        if (!holeData[s.hole]) holeData[s.hole] = { shots: [], totalSG: 0 };
+        holeData[s.hole].shots.push(s);
+        if (s.sg !== null) holeData[s.hole].totalSG += s.sg;
+    });
+
+    Object.keys(holeData).forEach(function(hNum) {
+        var h = holeData[hNum];
+        var isCurrent = parseInt(hNum) === hole;
+
+        if (isCurrent) {
+            // Expanded view for the current hole
+            html += '<div class="text-[10px] font-bold text-blue-500 uppercase mt-6 mb-2 tracking-widest">Hole ' + hNum + ' (Current)</div>';
+            h.shots.forEach(function(s) {
+                var isPos = s.sg > 0;
+                var color = isPos ? 'text-emerald-600' : (s.sg < 0 ? 'text-rose-500' : 'text-slate-400');
+                var sgText = s.sg !== null ? (isPos ? '+' : '') + s.sg.toFixed(2) : '--';
+                var hb = s.holed ? '<span class="ml-2 bg-emerald-100 text-emerald-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase">Holed</span>' : '';
+                
+                html += '<div class="card p-4 flex justify-between items-center text-sm mb-1.5 border-l-4 border-blue-500">' +
+                    '<span><b class="text-blue-700 text-[10px] w-8 inline-block font-black uppercase">' + s.cat + '</b> ' + s.lie + ' <span class="text-slate-400 ml-1">(' + s.dist + (s.lie==='Green'?'ft':'y') + ')</span>' + hb + '</span>' +
+                    '<span class="font-black font-mono ' + color + '">' + sgText + '</span></div>';
+            });
+        } else {
+            // Collapsed view for completed holes
+            var totalSG = h.totalSG;
+            var color = totalSG > 0 ? 'text-emerald-600' : (totalSG < 0 ? 'text-rose-500' : 'text-slate-400');
+            var sgText = (totalSG > 0 ? '+' : '') + totalSG.toFixed(2);
+            
+            html += '<div class="flex justify-between items-center bg-slate-100 px-4 py-2 rounded-lg mt-2 opacity-70">' +
+                '<span class="text-[10px] font-bold text-slate-500 uppercase">Hole ' + hNum + ' Complete</span>' +
+                '<span class="text-xs font-black ' + color + '">SG: ' + sgText + '</span>' +
+                '</div>';
         }
-        list.innerHTML = html;
-        window.scrollTo(0, document.body.scrollHeight);
-    }
+    });
+
+    list.innerHTML = html;
+    window.scrollTo(0, document.body.scrollHeight);
+}
 
     function doSave() {
         var h = JSON.parse(localStorage.getItem('sg_v8_final') || '[]');
