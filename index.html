@@ -59,11 +59,13 @@
         </div>
     </div>
 
-    <script>
+<script>
+    // 1. GLOBAL STATE
     var shots = [];
     var lie = 'Tee';
     var hole = 1;
     var chart = null;
+    var expandedHole = null; // NEW: Tracks which old hole is "peeked" at
 
     var table = {
         'Tee': { 500:4.6, 400:4.3, 350:4.1, 200:3.6, 150:3.3, 0:0 },
@@ -72,6 +74,7 @@
         'Green': { 100:2.5, 60:2.3, 30:2.0, 20:1.85, 10:1.6, 5:1.3, 3:1.1, 1:1.05, 0:0 }
     };
 
+    // 2. VIEW CONTROLS
     function goView(v) {
         document.getElementById('v-entry').classList.toggle('hidden', v !== 'entry');
         document.getElementById('v-trends').classList.toggle('hidden', v !== 'trends');
@@ -85,6 +88,13 @@
         }
     }
 
+    function toggleHole(n) {
+        if (n === hole) return; // Don't collapse the active hole
+        expandedHole = (expandedHole === n) ? null : n;
+        ui();
+    }
+
+    // 3. CORE LOGIC
     function setL(l) {
         lie = l;
         var btns = document.getElementsByClassName('l-btn');
@@ -123,19 +133,18 @@
         ui();
     }
 
-  function doHoled() {
-    if (shots.length === 0) return;
-    var last = shots[shots.length-1];
-    if (last.holed) return;
-    last.sg = last.ev - 1; 
-    last.holed = true;
-    
-    // We update the hole counter BEFORE calling ui() so it knows to collapse the hole
-    hole++;
-    document.getElementById('h-label').innerText = 'Hole ' + hole;
-    setL('Tee');
-    ui();
-}
+    function doHoled() {
+        if (shots.length === 0) return;
+        var last = shots[shots.length-1];
+        if (last.holed) return;
+        last.sg = last.ev - 1; 
+        last.holed = true;
+        hole++; // Auto-advance to next hole
+        document.getElementById('h-label').innerText = 'Hole ' + hole;
+        setL('Tee');
+        expandedHole = null; // Close any "peeks" when moving to a new hole
+        ui();
+    }
 
     function doUndo() {
         if (shots.length === 0) return;
@@ -148,51 +157,55 @@
         ui();
     }
 
-   function ui() {
-    var list = document.getElementById('s-list');
-    var html = '';
-    var holeData = {};
+    // 4. THE UPGRADED UI ENGINE
+    function ui() {
+        var list = document.getElementById('s-list');
+        var html = '';
+        var holeData = {};
 
-    // Group shots by hole
-    shots.forEach(function(s) {
-        if (!holeData[s.hole]) holeData[s.hole] = { shots: [], totalSG: 0 };
-        holeData[s.hole].shots.push(s);
-        if (s.sg !== null) holeData[s.hole].totalSG += s.sg;
-    });
+        // Group data for the accordion
+        shots.forEach(function(s) {
+            if (!holeData[s.hole]) holeData[s.hole] = { shots: [], totalSG: 0 };
+            holeData[s.hole].shots.push(s);
+            if (s.sg !== null) holeData[s.hole].totalSG += s.sg;
+        });
 
-    Object.keys(holeData).forEach(function(hNum) {
-        var h = holeData[hNum];
-        var isCurrent = parseInt(hNum) === hole;
+        Object.keys(holeData).forEach(function(hNum) {
+            var h = holeData[hNum];
+            var n = parseInt(hNum);
+            var isExpanded = (n === hole || n === expandedHole);
 
-        if (isCurrent) {
-            // Expanded view for the current hole
-            html += '<div class="text-[10px] font-bold text-blue-500 uppercase mt-6 mb-2 tracking-widest">Hole ' + hNum + ' (Current)</div>';
-            h.shots.forEach(function(s) {
-                var isPos = s.sg > 0;
-                var color = isPos ? 'text-emerald-600' : (s.sg < 0 ? 'text-rose-500' : 'text-slate-400');
-                var sgText = s.sg !== null ? (isPos ? '+' : '') + s.sg.toFixed(2) : '--';
-                var hb = s.holed ? '<span class="ml-2 bg-emerald-100 text-emerald-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase">Holed</span>' : '';
+            if (isExpanded) {
+                // Expanded View
+                var label = (n === hole) ? 'Hole ' + hNum + ' (Active)' : 'Hole ' + hNum + ' (Review)';
+                html += '<div onclick="toggleHole(' + n + ')" class="text-[10px] font-bold text-blue-500 uppercase mt-6 mb-2 tracking-widest cursor-pointer">' + label + ' ↑</div>';
                 
-                html += '<div class="card p-4 flex justify-between items-center text-sm mb-1.5 border-l-4 border-blue-500">' +
-                    '<span><b class="text-blue-700 text-[10px] w-8 inline-block font-black uppercase">' + s.cat + '</b> ' + s.lie + ' <span class="text-slate-400 ml-1">(' + s.dist + (s.lie==='Green'?'ft':'y') + ')</span>' + hb + '</span>' +
-                    '<span class="font-black font-mono ' + color + '">' + sgText + '</span></div>';
-            });
-        } else {
-            // Collapsed view for completed holes
-            var totalSG = h.totalSG;
-            var color = totalSG > 0 ? 'text-emerald-600' : (totalSG < 0 ? 'text-rose-500' : 'text-slate-400');
-            var sgText = (totalSG > 0 ? '+' : '') + totalSG.toFixed(2);
-            
-            html += '<div class="flex justify-between items-center bg-slate-100 px-4 py-2 rounded-lg mt-2 opacity-70">' +
-                '<span class="text-[10px] font-bold text-slate-500 uppercase">Hole ' + hNum + ' Complete</span>' +
-                '<span class="text-xs font-black ' + color + '">SG: ' + sgText + '</span>' +
-                '</div>';
-        }
-    });
+                h.shots.forEach(function(s) {
+                    var isPos = s.sg > 0;
+                    var color = isPos ? 'text-emerald-600' : (s.sg < 0 ? 'text-rose-500' : 'text-slate-400');
+                    var sgText = s.sg !== null ? (isPos ? '+' : '') + s.sg.toFixed(2) : '--';
+                    var hb = s.holed ? '<span class="ml-2 bg-emerald-100 text-emerald-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase">Holed</span>' : '';
+                    
+                    html += '<div class="card p-4 flex justify-between items-center text-sm mb-1.5 border-l-4 ' + (n === hole ? 'border-blue-500' : 'border-slate-300') + '">' +
+                        '<span><b class="text-blue-700 text-[10px] w-8 inline-block font-black uppercase">' + s.cat + '</b> ' + s.lie + ' <span class="text-slate-400 ml-1">(' + s.dist + (s.lie==='Green'?'ft':'y') + ')</span>' + hb + '</span>' +
+                        '<span class="font-black font-mono ' + color + '">' + sgText + '</span></div>';
+                });
+            } else {
+                // Collapsed View
+                var totalSG = h.totalSG;
+                var color = totalSG > 0 ? 'text-emerald-600' : (totalSG < 0 ? 'text-rose-500' : 'text-slate-400');
+                var sgText = (totalSG > 0 ? '+' : '') + totalSG.toFixed(2);
+                
+                html += '<div onclick="toggleHole(' + n + ')" class="flex justify-between items-center bg-white border border-slate-200 px-4 py-3 rounded-xl mt-2 cursor-pointer shadow-sm hover:bg-slate-50">' +
+                    '<span class="text-[10px] font-bold text-slate-500 uppercase">Hole ' + hNum + ' Review Shots</span>' +
+                    '<span class="text-xs font-black ' + color + '">SG: ' + sgText + '</span>' +
+                    '</div>';
+            }
+        });
 
-    list.innerHTML = html;
-    window.scrollTo(0, document.body.scrollHeight);
-}
+        list.innerHTML = html;
+        if (holeData[hole]) window.scrollTo(0, document.body.scrollHeight);
+    }
 
     function doSave() {
         var h = JSON.parse(localStorage.getItem('sg_v8_final') || '[]');
@@ -200,7 +213,7 @@
         for(var i=0; i<shots.length; i++) { if(shots[i].sg !== null) t[shots[i].cat] += shots[i].sg; }
         h.push(t);
         localStorage.setItem('sg_v8_final', JSON.stringify(h.slice(-20)));
-        shots = []; hole = 1;
+        shots = []; hole = 1; expandedHole = null;
         document.getElementById('h-label').innerText = 'Hole 1';
         document.getElementById('s-btn').classList.add('hidden');
         ui();
@@ -210,50 +223,34 @@
     function renderChart() {
         var h = JSON.parse(localStorage.getItem('sg_v8_final') || '[]');
         var count = h.length;
-        
         if (count === 0) {
             document.getElementById('h-label').innerText = 'No Rounds Data';
             document.getElementById('roadmap-box').innerHTML = '<p class="text-center opacity-50 italic">Save a round to see your roadmap.</p>';
             return;
         }
-
-        // Calculate Average across all saved rounds
         var avg = { OTT:0, APP:0, SHG:0, PUT:0 };
-        h.forEach(function(r) {
-            avg.OTT += r.OTT; avg.APP += r.APP; avg.SHG += r.SHG; avg.PUT += r.PUT;
-        });
+        h.forEach(function(r) { avg.OTT += r.OTT; avg.APP += r.APP; avg.SHG += r.SHG; avg.PUT += r.PUT; });
         avg.OTT /= count; avg.APP /= count; avg.SHG /= count; avg.PUT /= count;
 
         document.getElementById('h-label').innerText = 'Averages over ' + count + ' Rounds';
-
         var ctx = document.getElementById('main-chart').getContext('2d');
         if (chart) chart.destroy();
-        
         var cats = ['OTT', 'APP', 'SHG', 'PUT'];
         var vals = [avg.OTT, avg.APP, avg.SHG, avg.PUT];
-        
         chart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: ['Tee', 'Appr', 'Short', 'Putt'],
-                datasets: [{ 
-                    data: vals, 
-                    backgroundColor: vals.map(function(v){ return v >= 0 ? '#10b981' : '#f43f5e'; }) 
-                }]
+                datasets: [{ data: vals, backgroundColor: vals.map(function(v){ return v >= 0 ? '#10b981' : '#f43f5e'; }) }]
             },
             options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
-
         var worst = cats.reduce(function(a, b){ return avg[a] < avg[b] ? a : b });
         var names = { OTT:'Driving', APP:'Irons', SHG:'Wedges', PUT:'Putting' };
-        var gap = (0.95 - avg[worst]).toFixed(2);
-        
-        document.getElementById('roadmap-box').innerHTML = 
-            '<p class="text-lg font-black uppercase tracking-tight">Trend Leak: ' + names[worst] + '</p>' +
-            '<p class="text-xs opacity-90">Based on ' + count + ' rounds, gain <b>' + gap + ' strokes</b> here to hit 5-HCP level.</p>';
+        document.getElementById('roadmap-box').innerHTML = '<p class="text-lg font-black uppercase tracking-tight">Trend Leak: ' + names[worst] + '</p><p class="text-xs opacity-90">Based on ' + count + ' rounds, gain <b>' + (0.95 - avg[worst]).toFixed(2) + ' strokes</b> to hit 5-HCP level.</p>';
     }
 
-    function doWipe() { if(confirm("Clear everything?")) { localStorage.removeItem('sg_v8_final'); location.reload(); } }
+    function doWipe() { if(confirm("Clear?")) { localStorage.removeItem('sg_v8_final'); location.reload(); } }
 </script>
 
 </body>
