@@ -135,4 +135,87 @@
 
         function renderRound() {
             const list = document.getElementById('shot-list');
-            let html =
+            let html = '';
+            let lastHole = 0;
+
+            roundShots.forEach((s) => {
+                if (s.hole !== lastHole) {
+                    html += `<div class="text-[10px] font-black text-slate-400 uppercase mt-6 mb-2 tracking-widest border-b border-slate-100 pb-1">Hole ${s.hole}</div>`;
+                    lastHole = s.hole;
+                }
+                
+                const sgVal = s.sg !== null ? (s.sg > 0 ? '+' : '') + s.sg.toFixed(2) : (s.dist === 0 ? '✓ HOLED' : '...');
+                const sgColor = s.sg > 0 ? 'text-emerald-600' : (s.sg < 0 ? 'text-rose-500' : 'text-slate-400');
+
+                html += `
+                    <div class="card p-3 flex justify-between items-center text-sm mb-1">
+                        <span><b class="text-blue-700 w-8 inline-block">${s.category}</b> ${s.lie} <span class="text-slate-400">@ ${s.dist}${s.lie==='Green'?'ft':'y'}</span></span>
+                        <span class="font-bold ${sgColor}">${sgVal}</span>
+                    </div>
+                `;
+            });
+
+            list.innerHTML = html;
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        function saveRound() {
+            const history = JSON.parse(localStorage.getItem('sgHistory') || '[]');
+            const totals = { OTT: 0, APP: 0, SHG: 0, PUT: 0, date: new Date().toLocaleDateString() };
+            roundShots.forEach(s => { if(s.sg) totals[s.category] += s.sg; });
+            history.push(totals);
+            localStorage.setItem('sgHistory', JSON.stringify(history.slice(-20)));
+            
+            roundShots = [];
+            holeCounter = 1;
+            document.getElementById('current-hole-display').innerText = `Entering Hole 1`;
+            document.getElementById('save-btn').classList.add('hidden');
+            renderRound();
+            alert("Round Logged Successfully!");
+        }
+
+        function showView(view) {
+            document.getElementById('view-entry').classList.toggle('hidden', view !== 'entry');
+            document.getElementById('view-trends').classList.toggle('hidden', view !== 'trends');
+            document.getElementById('btn-entry').className = `text-[10px] font-bold px-3 py-2 rounded-md ${view === 'entry' ? 'bg-white shadow-sm' : ''}`;
+            document.getElementById('btn-trends').className = `text-[10px] font-bold px-3 py-2 rounded-md ${view === 'trends' ? 'bg-white shadow-sm' : ''}`;
+            if(view === 'trends') renderTrends();
+        }
+
+        function renderTrends() {
+            const history = JSON.parse(localStorage.getItem('sgHistory') || '[]');
+            if (history.length === 0) return;
+            const ctx = document.getElementById('trendsChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            
+            const categories = ['OTT', 'APP', 'SHG', 'PUT'];
+            const latest = history[history.length - 1];
+            
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Tee', 'Approach', 'Short', 'Putt'],
+                    datasets: [{
+                        label: 'SG vs 10-HCP',
+                        data: categories.map(c => latest[c]),
+                        backgroundColor: categories.map(c => latest[c] >= 0 ? '#10b981' : '#f43f5e'),
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            const worstVal = Math.min(...categories.map(c => latest[c]));
+            const worstCat = categories.find(c => latest[c] === worstVal);
+            const catNames = { OTT: 'Off the Tee', APP: 'Approach', SHG: 'Short Game', PUT: 'Putting' };
+            const gap = 0.95 - latest[worstCat];
+            document.getElementById('goal-content').innerHTML = `
+                <p class="text-lg font-black mt-1">Focus: ${catNames[worstCat]}</p>
+                <p class="text-xs opacity-90 leading-tight">Gain <b>${gap.toFixed(2)}</b> strokes here to play like a 5-HCP.</p>
+            `;
+        }
+
+        function clearHistory() { if(confirm("Clear all round history?")) { localStorage.removeItem('sgHistory'); showView('entry'); } }
+    </script>
+</body>
+</html>
