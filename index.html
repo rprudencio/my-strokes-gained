@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SG 10-HCP Analyst</title>
+    <title>SG Analyst</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .card { background: white; border-radius: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .lie-btn { transition: all 0.2s; }
+        .lie-btn { transition: all 0.1s; border: 2px solid transparent; }
+        .active-lie { background-color: #1d4ed8 !important; color: white !important; border-color: #1e40af; }
     </style>
 </head>
 <body class="p-4 font-sans text-slate-800 pb-24">
@@ -21,54 +22,49 @@
                 <p id="current-hole-display" class="text-[10px] font-bold text-slate-400 uppercase">Entering Hole 1</p>
             </div>
             <div class="flex gap-1 bg-slate-200 p-1 rounded-lg">
-                <button onclick="showView('entry')" id="btn-entry" class="text-[10px] font-bold px-4 py-2 rounded-md bg-white shadow-sm transition-all">ENTRY</button>
-                <button onclick="showView('trends')" id="btn-trends" class="text-[10px] font-bold px-4 py-2 rounded-md transition-all">TRENDS</button>
+                <button onclick="showView('entry')" id="btn-entry" class="text-[10px] font-bold px-4 py-2 rounded-md bg-white shadow-sm">ENTRY</button>
+                <button onclick="showView('trends')" id="btn-trends" class="text-[10px] font-bold px-4 py-2 rounded-md">TRENDS</button>
             </div>
         </header>
 
         <div id="view-entry">
             <div class="card p-6 mb-6 border-2 border-blue-50">
                 <div class="grid grid-cols-3 gap-2 mb-4">
-                    <button onclick="setLie('Tee')" id="lie-Tee" class="lie-btn bg-blue-600 text-white p-3 rounded-xl font-bold text-sm">Tee</button>
-                    <button onclick="setLie('Fairway')" id="lie-Fairway" class="lie-btn bg-slate-100 p-3 rounded-xl font-bold text-sm">Fairway</button>
-                    <button onclick="setLie('Rough')" id="lie-Rough" class="lie-btn bg-slate-100 p-3 rounded-xl font-bold text-sm">Rough</button>
-                    <button onclick="setLie('Green')" id="lie-Green" class="lie-btn bg-slate-100 p-3 rounded-xl font-bold col-span-3 mt-1 text-[10px] uppercase tracking-[0.2em]">On Green (Feet)</button>
+                    <button onclick="setLie('Tee')" class="lie-btn active-lie bg-slate-100 p-3 rounded-xl font-bold text-sm" id="btn-Tee">Tee</button>
+                    <button onclick="setLie('Fairway')" class="lie-btn bg-slate-100 p-3 rounded-xl font-bold text-sm" id="btn-Fairway">Fairway</button>
+                    <button onclick="setLie('Rough')" class="lie-btn bg-slate-100 p-3 rounded-xl font-bold text-sm" id="btn-Rough">Rough</button>
+                    <button onclick="setLie('Green')" class="lie-btn bg-slate-100 p-3 rounded-xl font-bold col-span-3 mt-1 text-[10px] uppercase tracking-widest" id="btn-Green">On Green (Feet)</button>
                 </div>
 
                 <input id="dist-input" type="number" inputmode="numeric" placeholder="Distance..." class="w-full text-4xl font-black border-b-4 border-slate-100 outline-none focus:border-blue-500 py-2 mb-6 text-center">
                 
                 <div class="flex gap-2">
-                    <button onclick="addShot()" class="flex-[3] bg-blue-700 text-white py-5 rounded-2xl font-black shadow-lg active:scale-95 transition-transform text-lg">RECORD</button>
-                    <button onclick="deleteLastShot()" class="flex-1 bg-slate-100 text-slate-500 flex items-center justify-center rounded-2xl active:bg-slate-200 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                        </svg>
+                    <button onclick="addShot()" class="flex-[4] bg-blue-700 text-white py-5 rounded-2xl font-black shadow-lg active:bg-blue-800 text-lg">RECORD SHOT</button>
+                    <button onclick="deleteLastShot()" class="flex-1 bg-slate-200 text-slate-600 flex items-center justify-center rounded-2xl active:bg-slate-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                     </button>
                 </div>
             </div>
 
             <div id="shot-list" class="space-y-2"></div>
-            
-            <button onclick="saveRound()" id="save-btn" class="hidden w-full mt-8 bg-emerald-600 text-white py-5 rounded-2xl font-black shadow-lg shadow-emerald-100 active:bg-emerald-700 transition-colors uppercase tracking-widest">Save Entire Round</button>
+            <button onclick="saveRound()" id="save-btn" class="hidden w-full mt-8 bg-emerald-600 text-white py-5 rounded-2xl font-black shadow-lg uppercase tracking-widest">Save Round</button>
         </div>
 
         <div id="view-trends" class="hidden space-y-4">
-            <div class="card p-4">
-                <canvas id="trendsChart"></canvas>
-            </div>
-            <div id="goal-tracker" class="card p-5 bg-gradient-to-br from-blue-600 to-blue-800 text-white">
+            <div class="card p-4"><canvas id="trendsChart"></canvas></div>
+            <div id="goal-tracker" class="card p-5 bg-gradient-to-br from-blue-700 to-blue-900 text-white">
                 <h3 class="text-[10px] font-bold uppercase opacity-70 mb-1 tracking-widest">Roadmap to 5-HCP</h3>
-                <div id="goal-content"><p class="italic text-sm opacity-80 text-center py-2">Save a round to see your analytics.</p></div>
+                <div id="goal-content"></div>
             </div>
-            <button onclick="clearHistory()" class="w-full text-[10px] font-bold text-slate-300 uppercase py-10 tracking-[0.3em]">Wipe All History</button>
+            <button onclick="clearHistory()" class="w-full text-[10px] font-bold text-slate-300 uppercase py-10">Wipe All History</button>
         </div>
     </div>
 
     <script>
         let roundShots = [];
         let currentLie = 'Tee';
-        let chartInstance = null;
         let holeCounter = 1;
+        let chartInstance = null;
 
         const baseline = {
             'Tee': { 450: 4.5, 400: 4.3, 350: 4.1, 200: 3.6, 150: 3.3 },
@@ -79,17 +75,70 @@
 
         function setLie(lie) {
             currentLie = lie;
-            document.querySelectorAll('.lie-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-600', 'text-white');
-                btn.classList.add('bg-slate-100', 'text-slate-800');
-            });
-            const activeBtn = document.getElementById('lie-' + lie);
-            activeBtn.classList.remove('bg-slate-100', 'text-slate-800');
-            activeBtn.classList.add('bg-blue-600', 'text-white');
+            document.querySelectorAll('.lie-btn').forEach(b => b.classList.remove('active-lie'));
+            document.getElementById('btn-' + lie).classList.add('active-lie');
         }
 
         function getExpected(lie, dist) {
             const table = baseline[lie];
-            const dists = Object.keys(table).map(Number).sort((a, b) => b - a);
+            const dists = Object.keys(table).map(Number).sort((a,b) => b-a);
             if (dist >= dists[0]) return table[dists[0]];
-            if (dist <= dists[dists.length - 1]) return table[dists[dists.length - 1]];
+            if (dist <= dists[dists.length-1]) return table[dists[dists.length-1]];
+            for (let i=0; i<dists.length-1; i++) {
+                if (dist <= dists[i] && dist >= dists[i+1]) {
+                    const d1=dists[i], d2=dists[i+1], v1=table[d1], v2=table[d2];
+                    return v2 + (v1-v2) * (dist-d2) / (d1-d2);
+                }
+            }
+            return 2.5;
+        }
+
+        function addShot() {
+            const val = document.getElementById('dist-input').value;
+            if (!val) return;
+            const dist = parseFloat(val);
+            const exp = getExpected(currentLie, dist);
+            let cat = (currentLie === 'Tee') ? 'OTT' : (currentLie === 'Green' ? 'PUT' : (dist <= 100 ? 'SHG' : 'APP'));
+
+            if (roundShots.length > 0) {
+                const last = roundShots[roundShots.length - 1];
+                if (last.dist !== 0) last.sg = last.exp - exp - 1;
+            }
+
+            roundShots.push({ lie: currentLie, dist, exp, category: cat, sg: null, hole: holeCounter });
+            
+            if (dist === 0) {
+                holeCounter++;
+                document.getElementById('current-hole-display').innerText = `Entering Hole ${holeCounter}`;
+                setLie('Tee');
+            }
+
+            document.getElementById('dist-input').value = '';
+            document.getElementById('save-btn').classList.remove('hidden');
+            renderRound();
+        }
+
+        function deleteLastShot() {
+            if (roundShots.length === 0) return;
+            const removed = roundShots.pop();
+            if (removed.dist === 0) {
+                holeCounter--;
+                document.getElementById('current-hole-display').innerText = `Entering Hole ${holeCounter}`;
+            }
+            if (roundShots.length > 0) roundShots[roundShots.length-1].sg = null;
+            renderRound();
+        }
+
+        function renderRound() {
+            const list = document.getElementById('shot-list');
+            let html = '';
+            let lastH = 0;
+            roundShots.forEach(s => {
+                if (s.hole !== lastH) {
+                    html += `<div class="text-[10px] font-black text-slate-400 uppercase mt-4 mb-2 border-b">Hole ${s.hole}</div>`;
+                    lastH = s.hole;
+                }
+                const sg = s.sg ? (s.sg > 0 ? '+' : '') + s.sg.toFixed(2) : (s.dist === 0 ? '✓' : '--');
+                const col = s.sg > 0 ? 'text-emerald-600' : (s.sg < 0 ? 'text-rose-500' : 'text-slate-400');
+                html += `<div class="card p-3 flex justify-between items-center text-sm mb-1">
+                    <span><b class="text-blue-700 w-8 inline-block uppercase text-[10px]">${s.category}</b> ${s.lie} (${s.dist}${s.lie==='Green'?'
