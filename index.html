@@ -7,11 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* CRITICAL MOBILE FIXES */
-        body { background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        body { background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
         .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
         .active-lie { background-color: #1d4ed8 !important; color: white !important; font-weight: 800; }
-        button { cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+        button { cursor: pointer; touch-action: manipulation; }
         .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     </style>
 </head>
@@ -21,177 +20,53 @@
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h1 class="text-xl font-black text-blue-700 tracking-tighter uppercase">SG Analytics</h1>
-                <p id="label-hole" class="text-[10px] font-bold text-slate-400 uppercase">Hole 1</p>
+                <p id="h-label" class="text-[10px] font-bold text-slate-400 uppercase">Hole 1</p>
             </div>
             <div class="flex bg-slate-200 p-1 rounded-lg">
-                <button type="button" id="nav-to-entry" class="text-[10px] font-bold px-4 py-2 rounded-md bg-white">ENTRY</button>
-                <button type="button" id="nav-to-trends" class="text-[10px] font-bold px-4 py-2 rounded-md">TRENDS</button>
+                <button type="button" onclick="goView('entry')" id="nav-entry" class="text-[10px] font-bold px-4 py-2 rounded-md bg-white">ENTRY</button>
+                <button type="button" onclick="goView('trends')" id="nav-trends" class="text-[10px] font-bold px-4 py-2 rounded-md">TRENDS</button>
             </div>
         </div>
 
-        <div id="section-entry" style="display: block;">
-            <div class="card p-6 mb-6">
+        <div id="v-entry">
+            <div class="card p-6 mb-4">
                 <div class="grid grid-cols-3 gap-2 mb-4">
-                    <button type="button" id="lie-Tee" class="lie-opt active-lie bg-slate-100 p-3 rounded-xl text-sm">Tee</button>
-                    <button type="button" id="lie-Fairway" class="lie-opt bg-slate-100 p-3 rounded-xl text-sm">Fairway</button>
-                    <button type="button" id="lie-Rough" class="lie-opt bg-slate-100 p-3 rounded-xl text-sm">Rough</button>
-                    <button type="button" id="lie-Green" class="lie-opt bg-slate-100 p-3 rounded-xl col-span-3 text-[10px] uppercase tracking-widest">Green (Feet)</button>
+                    <button type="button" onclick="setL('Tee')" id="l-Tee" class="l-btn active-lie bg-slate-100 p-3 rounded-xl text-sm font-bold">Tee</button>
+                    <button type="button" onclick="setL('Fairway')" id="l-Fairway" class="l-btn bg-slate-100 p-3 rounded-xl text-sm font-bold">Fairway</button>
+                    <button type="button" onclick="setL('Rough')" id="l-Rough" class="l-btn bg-slate-100 p-3 rounded-xl text-sm font-bold">Rough</button>
+                    <button type="button" onclick="setL('Green')" id="l-Green" class="l-btn bg-slate-100 p-3 rounded-xl col-span-3 text-[10px] uppercase font-bold tracking-widest">Green (Feet)</button>
                 </div>
 
-                <input id="input-dist" type="number" inputmode="numeric" placeholder="Distance" class="w-full text-4xl font-black border-b-4 border-slate-100 outline-none focus:border-blue-500 py-2 mb-6 text-center">
+                <input id="d-in" type="number" inputmode="numeric" placeholder="Distance" class="w-full text-4xl font-black border-b-4 border-slate-100 outline-none focus:border-blue-500 py-2 mb-6 text-center">
                 
                 <div class="space-y-3">
                     <div class="flex gap-2">
-                        <button type="button" id="action-record" class="flex-[4] bg-blue-700 text-white py-5 rounded-2xl font-black text-lg shadow-lg uppercase">Record Shot</button>
-                        <button type="button" id="action-undo" class="flex-1 bg-slate-200 text-slate-600 flex items-center justify-center rounded-2xl">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
-                        </button>
+                        <button type="button" onclick="doRecord()" class="flex-[4] bg-blue-700 text-white py-5 rounded-2xl font-black text-lg shadow-lg active:bg-blue-800 uppercase">Record Shot</button>
+                        <button type="button" onclick="doUndo()" class="flex-1 bg-slate-200 text-slate-600 flex items-center justify-center rounded-2xl font-bold">Undo</button>
                     </div>
-                    <button type="button" id="action-holed" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase shadow-md">✓ Ball is Holed</button>
+                    <button type="button" onclick="doHoled()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase shadow-md active:bg-emerald-700">✓ Ball is Holed</button>
                 </div>
             </div>
 
-            <div id="display-list" class="space-y-2 pb-24"></div>
-            <button type="button" id="action-save" class="hidden fixed bottom-6 left-4 right-4 max-w-md mx-auto bg-emerald-700 text-white py-4 rounded-2xl font-black uppercase shadow-2xl">Save Round</button>
+            <div id="s-list" class="space-y-2 pb-24"></div>
+            <button type="button" onclick="doSave()" id="s-btn" class="hidden fixed bottom-6 left-4 right-4 max-w-md mx-auto bg-emerald-700 text-white py-4 rounded-2xl font-black uppercase shadow-2xl">Save Round</button>
         </div>
 
-        <div id="section-trends" style="display: none;">
-            <div class="card p-4 mb-4"><canvas id="canvas-chart"></canvas></div>
-            <div id="display-roadmap" class="card p-5 bg-blue-800 text-white mb-4"></div>
-            <button type="button" id="action-clear" class="w-full text-[10px] font-bold text-slate-400 uppercase py-10 tracking-widest">Wipe All Data</button>
+        <div id="v-trends" class="hidden">
+            <div class="card p-4 mb-4"><canvas id="main-chart"></canvas></div>
+            <div id="roadmap-box" class="card p-5 bg-blue-800 text-white"></div>
+            <button type="button" onclick="doWipe()" class="w-full text-[10px] font-bold text-slate-400 uppercase py-10 tracking-widest">Wipe All Data</button>
         </div>
     </div>
 
     <script>
-        // HARD-WIRED EVENT LISTENERS
-        document.addEventListener('DOMContentLoaded', () => {
-            let data_shots = [];
-            let state_lie = 'Tee';
-            let state_hole = 1;
-            let chart_instance = null;
+        // GLOBAL DATA
+        var shots = [];
+        var lie = 'Tee';
+        var hole = 1;
+        var chart = null;
 
-            const BASELINE = {
-                'Tee': { 500:4.6, 400:4.3, 350:4.1, 200:3.6, 150:3.3, 0:0 },
-                'Fairway': { 500:4.5, 400:4.2, 300:3.8, 200:3.4, 150:3.2, 100:2.9, 50:2.7, 20:2.5, 0:0 },
-                'Rough': { 500:4.7, 400:4.4, 300:4.1, 200:3.7, 150:3.5, 100:3.2, 50:2.9, 20:2.7, 0:0 },
-                'Green': { 100:2.5, 60:2.3, 30:2.0, 20:1.85, 10:1.6, 5:1.3, 3:1.1, 0:0 }
-            };
-
-            const getExp = (l, d) => {
-                const tbl = BASELINE[l];
-                const ks = Object.keys(tbl).map(Number).sort((a,b) => b-a);
-                if (d >= ks[0]) return tbl[ks[0]];
-                if (d <= ks[ks.length-1]) return tbl[ks[ks.length-1]];
-                for (let i=0; i<ks.length-1; i++) {
-                    if (d <= ks[i] && d >= ks[i+1]) {
-                        return tbl[ks[i+1]] + (tbl[ks[i]]-tbl[ks[i+1]]) * (d-ks[i+1]) / (ks[i]-ks[i+1]);
-                    }
-                }
-                return 2.5;
-            };
-
-            const render = () => {
-                const list = document.getElementById('display-list');
-                let lastH = 0;
-                list.innerHTML = data_shots.map(s => {
-                    let hStr = (s.hole !== lastH) ? `<div class="text-[10px] font-bold text-slate-400 uppercase mt-6 border-b border-slate-200 pb-1">Hole ${s.hole}</div>` : "";
-                    lastH = s.hole;
-                    const isPos = s.sg > 0;
-                    const isNeg = s.sg < 0;
-                    const colorClass = isPos ? 'text-emerald-600' : (isNeg ? 'text-rose-500' : 'text-slate-400');
-                    const sgText = s.sg !== null ? (isPos ? '+' : '') + s.sg.toFixed(2) : '--';
-                    const badge = s.holed ? '<span class="ml-2 bg-emerald-100 text-emerald-700 text-[8px] px-1.5 py-0.5 rounded font-bold">HOLED</span>' : '';
-                    return `${hStr}<div class="card p-4 flex justify-between items-center text-sm mt-1.5">
-                        <span><b class="text-blue-700 text-[10px] w-8 inline-block font-black">${s.cat}</b> ${s.lie} <span class="text-slate-400 ml-1">(${s.dist}${s.lie==='Green'?'ft':'y'})</span>${badge}</span>
-                        <span class="font-black font-mono ${colorClass}">${sgText}</span>
-                    </div>`;
-                }).join('');
-                window.scrollTo(0, document.body.scrollHeight);
-            };
-
-            // Lie Selection
-            document.querySelectorAll('.lie-opt').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    state_lie = btn.id.split('-')[1];
-                    document.querySelectorAll('.lie-opt').forEach(b => b.classList.remove('active-lie'));
-                    btn.classList.add('active-lie');
-                });
-            });
-
-            // Record Shot
-            document.getElementById('action-record').addEventListener('click', (e) => {
-                e.preventDefault();
-                const input = document.getElementById('input-dist');
-                if (!input.value) return;
-                const d = parseFloat(input.value);
-                const ex = getExp(state_lie, d);
-                const ct = (state_lie === 'Tee') ? 'OTT' : (state_lie === 'Green' ? 'PUT' : (d <= 100 ? 'SHG' : 'APP'));
-
-                if (data_shots.length > 0) {
-                    const prev = data_shots[data_shots.length-1];
-                    if (!prev.holed) prev.sg = prev.exp - ex - 1;
-                }
-                data_shots.push({ lie: state_lie, dist: d, exp: ex, cat: ct, sg: null, hole: state_hole, holed: false });
-                input.value = '';
-                document.getElementById('action-save').classList.remove('hidden');
-                render();
-            });
-
-            // Holed
-            document.getElementById('action-holed').addEventListener('click', (e) => {
-                e.preventDefault();
-                if (data_shots.length === 0) return;
-                const last = data_shots[data_shots.length-1];
-                if (last.holed) return;
-                last.sg = last.exp - 0 - 1;
-                last.holed = true;
-                state_hole++;
-                document.getElementById('label-hole').innerText = `Hole ${state_hole}`;
-                state_lie = 'Tee';
-                document.querySelectorAll('.lie-opt').forEach(b => b.classList.remove('active-lie'));
-                document.getElementById('lie-Tee').classList.add('active-lie');
-                render();
-            });
-
-            // Undo
-            document.getElementById('action-undo').addEventListener('click', (e) => {
-                e.preventDefault();
-                if (data_shots.length === 0) return;
-                const popped = data_shots.pop();
-                if (popped.holed) {
-                    state_hole--;
-                    document.getElementById('label-hole').innerText = `Hole ${state_hole}`;
-                }
-                if (data_shots.length > 0) data_shots[data_shots.length-1].sg = null;
-                render();
-            });
-
-            // Save
-            document.getElementById('action-save').addEventListener('click', (e) => {
-                e.preventDefault();
-                const hist = JSON.parse(localStorage.getItem('sg_history_final') || '[]');
-                const total = { OTT:0, APP:0, SHG:0, PUT:0 };
-                data_shots.forEach(s => { if(s.sg !== null) total[s.cat] += s.sg; });
-                hist.push(total);
-                localStorage.setItem('sg_history_final', JSON.stringify(hist.slice(-20)));
-                data_shots = []; state_hole = 1;
-                document.getElementById('label-hole').innerText = `Hole 1`;
-                document.getElementById('action-save').classList.add('hidden');
-                render();
-                alert("Round Saved Successfully!");
-            });
-
-            // Navigation
-            document.getElementById('nav-to-entry').addEventListener('click', () => {
-                document.getElementById('section-entry').style.display = 'block';
-                document.getElementById('section-trends').style.display = 'none';
-                document.getElementById('nav-to-entry').classList.add('bg-white');
-                document.getElementById('nav-to-trends').classList.remove('bg-white');
-            });
-
-            document.getElementById('nav-to-trends').addEventListener('click', () => {
-                document.getElementById('section-entry').style.display = 'none';
-                document.getElementById('section-trends').style.display = 'block';
-                document.getElementById('nav-to-entry').classList.remove('bg-white');
-                document
+        var table = {
+            'Tee': { 500:4.6, 400:4.3, 350:4.1, 200:3.6, 150:3.3, 0:0 },
+            'Fairway': { 500:4.5, 400:4.2, 300:3.8, 200:3.4, 150:3.2, 100:2.9, 50:2.7, 20:2.5, 0:0 },
+            'Rough': { 500:4
