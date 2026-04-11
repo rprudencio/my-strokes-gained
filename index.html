@@ -59,153 +59,156 @@
         </div>
     </div>
 
-    <script>
-        var shots = [];
-        var lie = 'Tee';
-        var hole = 1;
-        var chart = null;
+  <script>
+    var shots = [];
+    var lie = 'Tee';
+    var hole = 1;
+    var chart = null;
 
-        var table = {
-            'Tee': { 500:4.6, 450:4.5, 400:4.3, 350:4.1, 200:3.6, 150:3.3, 0:0 },
-            'Fairway': { 500:4.5, 400:4.2, 300:3.8, 200:3.4, 150:3.2, 100:2.9, 50:2.7, 20:2.5, 0:0 },
-            'Rough': { 500:4.7, 400:4.4, 300:4.1, 200:3.7, 150:3.5, 100:3.2, 50:2.9, 20:2.7, 0:0 },
-           'Green': { 60:2.3, 30:2.0, 20:1.85, 10:1.6, 5:1.3, 3:1.1, 0:0 }
-        };
+    var table = {
+        'Tee': { 500:4.6, 400:4.3, 350:4.1, 200:3.6, 150:3.3, 0:0 },
+        'Fairway': { 500:4.5, 400:4.2, 300:3.8, 200:3.4, 150:3.2, 100:2.9, 50:2.7, 20:2.5, 0:0 },
+        'Rough': { 500:4.7, 400:4.4, 300:4.1, 200:3.7, 150:3.5, 100:3.2, 50:2.9, 20:2.7, 0:0 },
+        'Green': { 100:2.5, 60:2.3, 30:2.0, 20:1.85, 10:1.6, 5:1.3, 3:1.1, 1:1.05, 0:0 }
+    };
 
-        function goView(v) {
-            document.getElementById('v-entry').classList.toggle('hidden', v !== 'entry');
-            document.getElementById('v-trends').classList.toggle('hidden', v !== 'trends');
-            document.getElementById('nav-entry').classList.toggle('bg-white', v === 'entry');
-            document.getElementById('nav-trends').classList.toggle('bg-white', v === 'trends');
-            if (v === 'trends') renderChart();
-        }
+    function goView(v) {
+        document.getElementById('v-entry').classList.toggle('hidden', v !== 'entry');
+        document.getElementById('v-trends').classList.toggle('hidden', v !== 'trends');
+        document.getElementById('nav-entry').classList.toggle('bg-white', v === 'entry');
+        document.getElementById('nav-trends').classList.toggle('bg-white', v === 'trends');
+        if (v === 'trends') renderChart();
+    }
 
-        function setL(l) {
-            lie = l;
-            var btns = document.getElementsByClassName('l-btn');
-            for(var i=0; i<btns.length; i++) { btns[i].classList.remove('active-lie'); }
-            document.getElementById('l-' + l).classList.add('active-lie');
-        }
+    function setL(l) {
+        lie = l;
+        var btns = document.getElementsByClassName('l-btn');
+        for(var i=0; i<btns.length; i++) { btns[i].classList.remove('active-lie'); }
+        document.getElementById('l-' + l).classList.add('active-lie');
+    }
 
-        function getVal(l, d) {
-            var dta = table[l];
-            var ks = Object.keys(dta).map(Number).sort(function(a,b){return b-a});
-            if (d >= ks[0]) return dta[ks[0]];
-            if (d <= ks[ks.length-1]) return dta[ks[ks.length-1]];
-            for (var i=0; i<ks.length-1; i++) {
-                if (d <= ks[i] && d >= ks[i+1]) {
-                    return dta[ks[i+1]] + (dta[ks[i]]-dta[ks[i+1]]) * (d-ks[i+1]) / (ks[i]-ks[i+1]);
-                }
+    function getVal(l, d) {
+        var dta = table[l];
+        var ks = Object.keys(dta).map(Number).sort(function(a,b){return b-a});
+        if (d >= ks[0]) return dta[ks[0]];
+        if (d <= ks[ks.length-1]) return dta[ks[ks.length-1]];
+        for (var i=0; i<ks.length-1; i++) {
+            if (d <= ks[i] && d >= ks[i+1]) {
+                return dta[ks[i+1]] + (dta[ks[i]]-dta[ks[i+1]]) * (d-ks[i+1]) / (ks[i]-ks[i+1]);
             }
-            return 2.5;
         }
+        return 2.5;
+    }
 
-        function doRecord() {
-            var inp = document.getElementById('d-in');
-            if (!inp.value) return;
-            var d = parseFloat(inp.value);
-            var ev = getVal(lie, d);
-            var ct = (lie === 'Tee') ? 'OTT' : (lie === 'Green' ? 'PUT' : (d <= 100 ? 'SHG' : 'APP'));
+    function doRecord() {
+        var inp = document.getElementById('d-in');
+        if (!inp.value) return;
+        var d = parseFloat(inp.value);
+        var ev = getVal(lie, d);
+        var ct = (lie === 'Tee') ? 'OTT' : (lie === 'Green' ? 'PUT' : (d <= 100 ? 'SHG' : 'APP'));
 
-            if (shots.length > 0) {
-                var prev = shots[shots.length-1];
-                if (!prev.holed) prev.sg = prev.ev - ev - 1;
+        // Calculate SG for the PREVIOUS shot now that we know where it landed
+        if (shots.length > 0) {
+            var prev = shots[shots.length-1];
+            if (!prev.holed) {
+                prev.sg = prev.ev - ev - 1;
             }
-
-            shots.push({ lie: lie, dist: d, ev: ev, cat: ct, sg: null, hole: hole, holed: false });
-            inp.value = '';
-            document.getElementById('s-btn').classList.remove('hidden');
-            ui();
         }
 
-        function doHoled() {
-    if (shots.length === 0) return;
-    var last = shots[shots.length-1];
-    if (last.holed) return;
-    
-    // The SG for the stroke that went INTO the hole
-    last.sg = last.ev - 1; 
-    last.holed = true;
-    
-    hole++;
-    document.getElementById('h-label').innerText = 'Hole ' + hole;
-    setL('Tee');
-    ui();
-}
+        shots.push({ lie: lie, dist: d, ev: ev, cat: ct, sg: null, hole: hole, holed: false });
+        inp.value = '';
+        document.getElementById('s-btn').classList.remove('hidden');
+        ui();
+    }
 
-        function doUndo() {
-            if (shots.length === 0) return;
-            var p = shots.pop();
-            if (p.holed) {
-                hole--;
-                document.getElementById('h-label').innerText = 'Hole ' + hole;
+    function doHoled() {
+        if (shots.length === 0) return;
+        var last = shots[shots.length-1];
+        if (last.holed) return;
+        
+        // The FINAL stroke: From its last position into the hole (value 0)
+        // Math: Current Expected Value - 0 (Holed) - 1 (The stroke itself)
+        last.sg = last.ev - 1; 
+        last.holed = true;
+        
+        hole++;
+        document.getElementById('h-label').innerText = 'Hole ' + hole;
+        setL('Tee');
+        ui();
+    }
+
+    function doUndo() {
+        if (shots.length === 0) return;
+        var p = shots.pop();
+        if (p.holed) {
+            hole--;
+            document.getElementById('h-label').innerText = 'Hole ' + hole;
+        }
+        if (shots.length > 0) shots[shots.length-1].sg = null;
+        ui();
+    }
+
+    function ui() {
+        var list = document.getElementById('s-list');
+        var html = '';
+        var lh = 0;
+        for(var i=0; i<shots.length; i++) {
+            var s = shots[i];
+            if (s.hole !== lh) {
+                html += '<div class="text-[10px] font-bold text-slate-400 uppercase mt-6 border-b border-slate-200 pb-1">Hole ' + s.hole + '</div>';
+                lh = s.hole;
             }
-            if (shots.length > 0) shots[shots.length-1].sg = null;
-            ui();
+            
+            var isPos = s.sg > 0;
+            var isNeg = s.sg < 0;
+            var color = isPos ? 'text-emerald-600' : (isNeg ? 'text-rose-500' : 'text-slate-400');
+            var sgText = s.sg !== null ? (isPos ? '+' : '') + s.sg.toFixed(2) : '--';
+            var holedBadge = s.holed ? '<span class="ml-2 bg-emerald-100 text-emerald-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase">Holed</span>' : '';
+            
+            html += '<div class="card p-4 flex justify-between items-center text-sm mt-1.5">' +
+                '<span><b class="text-blue-700 text-[10px] w-8 inline-block font-black uppercase">' + s.cat + '</b> ' + s.lie + ' <span class="text-slate-400 ml-1">(' + s.dist + (s.lie==='Green'?'ft':'y') + ')</span>' + holedBadge + '</span>' +
+                '<span class="font-black font-mono ' + color + '">' + sgText + '</span></div>';
         }
+        list.innerHTML = html;
+        window.scrollTo(0, document.body.scrollHeight);
+    }
 
-        function ui() {
-            var list = document.getElementById('s-list');
-            var html = '';
-            var lh = 0;
-            for(var i=0; i<shots.length; i++) {
-                var s = shots[i];
-                if (s.hole !== lh) {
-                    html += '<div class="text-[10px] font-bold text-slate-400 uppercase mt-6 border-b border-slate-200 pb-1">Hole ' + s.hole + '</div>';
-                    lh = s.hole;
-                }
-                var isPos = s.sg > 0;
-                var isNeg = s.sg < 0;
-                var color = isPos ? 'text-emerald-600' : (isNeg ? 'text-rose-500' : 'text-slate-400');
-                var sgText = s.sg !== null ? (isPos ? '+' : '') + s.sg.toFixed(2) : '--';
-                var holed = s.holed ? '<span class="ml-2 bg-emerald-100 text-emerald-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase">Holed</span>' : '';
-                html += '<div class="card p-4 flex justify-between items-center text-sm mt-1.5">' +
-                    '<span><b class="text-blue-700 text-[10px] w-8 inline-block font-black uppercase">' + s.cat + '</b> ' + s.lie + ' <span class="text-slate-400 ml-1">(' + s.dist + (s.lie==='Green'?'ft':'y') + ')</span>' + holed + '</span>' +
-                    '<span class="font-black font-mono ' + color + '">' + sgText + '</span></div>';
-            }
-            list.innerHTML = html;
-            window.scrollTo(0, document.body.scrollHeight);
-        }
+    function doSave() {
+        var h = JSON.parse(localStorage.getItem('sg_v8_final') || '[]');
+        var t = { OTT:0, APP:0, SHG:0, PUT:0 };
+        for(var i=0; i<shots.length; i++) { if(shots[i].sg !== null) t[shots[i].cat] += shots[i].sg; }
+        h.push(t);
+        localStorage.setItem('sg_v8_final', JSON.stringify(h.slice(-20)));
+        shots = []; hole = 1;
+        document.getElementById('h-label').innerText = 'Hole 1';
+        document.getElementById('s-btn').classList.add('hidden');
+        ui();
+        alert("Round Logged!");
+    }
 
-        function doSave() {
-            var h = JSON.parse(localStorage.getItem('sg_v8_final') || '[]');
-            var t = { OTT:0, APP:0, SHG:0, PUT:0 };
-            for(var i=0; i<shots.length; i++) { if(shots[i].sg !== null) t[shots[i].cat] += shots[i].sg; }
-            h.push(t);
-            localStorage.setItem('sg_v8_final', JSON.stringify(h.slice(-20)));
-            shots = []; hole = 1;
-            document.getElementById('h-label').innerText = 'Hole 1';
-            document.getElementById('s-btn').classList.add('hidden');
-            ui();
-            alert("Round Logged!");
-        }
+    function renderChart() {
+        var h = JSON.parse(localStorage.getItem('sg_v8_final') || '[]');
+        if (h.length === 0) return;
+        var last = h[h.length-1];
+        var ctx = document.getElementById('main-chart').getContext('2d');
+        if (chart) chart.destroy();
+        if (typeof Chart === 'undefined') return;
+        var cats = ['OTT', 'APP', 'SHG', 'PUT'];
+        var vals = [last.OTT, last.APP, last.SHG, last.PUT];
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Tee', 'Appr', 'Short', 'Putt'],
+                datasets: [{ data: vals, backgroundColor: vals.map(function(v){ return v >= 0 ? '#10b981' : '#f43f5e'; }) }]
+            },
+            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        });
+        var worst = cats.reduce(function(a, b){ return last[a] < last[b] ? a : b });
+        var names = { OTT:'Driving', APP:'Irons', SHG:'Wedges', PUT:'Putting' };
+        document.getElementById('roadmap-box').innerHTML = '<p class="text-lg font-black uppercase tracking-tight">Main Leak: ' + names[worst] + '</p><p class="text-xs opacity-90">Gain <b>' + (0.95 - last[worst]).toFixed(2) + ' strokes</b> here for 5-HCP level.</p>';
+    }
 
-        function renderChart() {
-            var h = JSON.parse(localStorage.getItem('sg_v8_final') || '[]');
-            if (h.length === 0) {
-                document.getElementById('roadmap-box').innerHTML = '<p class="text-center opacity-50 italic">Save a round to see your roadmap.</p>';
-                return;
-            }
-            var last = h[h.length-1];
-            var ctx = document.getElementById('main-chart').getContext('2d');
-            if (chart) chart.destroy();
-            if (typeof Chart === 'undefined') return;
-            var cats = ['OTT', 'APP', 'SHG', 'PUT'];
-            var vals = [last.OTT, last.APP, last.SHG, last.PUT];
-            chart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Tee', 'Appr', 'Short', 'Putt'],
-                    datasets: [{ data: vals, backgroundColor: vals.map(function(v){ return v >= 0 ? '#10b981' : '#f43f5e'; }) }]
-                },
-                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-            });
-            var worst = cats.reduce(function(a, b){ return last[a] < last[b] ? a : b });
-            var names = { OTT:'Driving', APP:'Irons', SHG:'Wedges', PUT:'Putting' };
-            document.getElementById('roadmap-box').innerHTML = '<p class="text-lg font-black uppercase tracking-tight">Main Leak: ' + names[worst] + '</p><p class="text-xs opacity-90">Gain <b>' + (0.95 - last[worst]).toFixed(2) + ' strokes</b> here for 5-HCP level.</p>';
-        }
-
-        function doWipe() { if(confirm("Clear?")) { localStorage.removeItem('sg_v8_final'); location.reload(); } }
-    </script>
+    function doWipe() { if(confirm("Clear everything?")) { localStorage.removeItem('sg_v8_final'); location.reload(); } }
+</script>
 </body>
 </html>
