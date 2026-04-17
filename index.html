@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SG Analytics V11.1</title>
+    <title>SG Analytics V11.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
         .active-lie { background-color: #1d4ed8 !important; color: white !important; font-weight: 800; }
-        #s-list, #v-trends-content { flex: 1; overflow-y: auto; padding-bottom: 100px; -webkit-overflow-scrolling: touch; }
+        #s-list, #v-trends-content { flex: 1; overflow-y: auto; padding-bottom: 120px; -webkit-overflow-scrolling: touch; }
         .sticky-top { position: sticky; top: 0; z-index: 50; background-color: #f1f5f9; padding-bottom: 10px; }
         .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-        .btn-penalty { background-color: #be123c; color: white; } /* Rose-700 */
+        .btn-penalty { background-color: #be123c; color: white; }
     </style>
 </head>
 <body class="p-4 font-sans text-slate-800">
@@ -22,8 +22,8 @@
         <div class="sticky-top">
             <div class="flex justify-between items-center mb-4">
                 <div>
-                    <h1 class="text-xl font-black text-blue-700 tracking-tighter uppercase">SG Analytics V11.1</h1>
-                    <p id="h-label" class="text-[10px] font-bold text-slate-400 uppercase">Hole 1</p>
+                    <h1 class="text-xl font-black text-blue-700 tracking-tighter uppercase">SG Analytics</h1>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">10 HCP Baseline • <span id="h-label">Hole 1</span></p>
                 </div>
                 <div class="flex bg-slate-200 p-1 rounded-lg">
                     <button onclick="goView('entry')" id="nav-entry" class="text-[10px] font-bold px-4 py-2 rounded-md bg-white">ENTRY</button>
@@ -37,15 +37,15 @@
                     <button onclick="setL('Fairway')" id="l-Fairway" class="l-btn bg-slate-100 p-2 rounded-xl text-sm font-bold">Fairway</button>
                     <button onclick="setL('Rough')" id="l-Rough" class="l-btn bg-slate-100 p-2 rounded-xl text-sm font-bold">Rough</button>
                     <button onclick="setL('Sand')" id="l-Sand" class="l-btn bg-slate-100 p-2 rounded-xl text-sm font-bold">Sand</button>
-                    <button onclick="setL('Green')" id="l-Green" class="l-btn bg-slate-100 p-2 rounded-xl col-span-2 text-[10px] uppercase font-bold tracking-widest">Green (Feet)</button>
+                    <button onclick="setL('Green')" id="l-Green" class="l-btn bg-slate-100 p-2 rounded-xl col-span-2 text-[10px] uppercase font-bold tracking-widest text-slate-400">Green (Feet)</button>
                 </div>
                 <input id="d-in" type="number" inputmode="numeric" placeholder="Distance" class="w-full text-3xl font-black border-b-4 border-slate-100 outline-none focus:border-blue-500 py-1 mb-4 text-center">
                 <div class="flex gap-2 mb-2">
-                    <button onclick="doRecord()" class="flex-[3] bg-blue-700 text-white py-3 rounded-xl font-black text-md shadow-lg uppercase active:bg-blue-800">Record Shot</button>
-                    <button onclick="doPenalty()" class="flex-1 btn-penalty rounded-xl font-black text-[10px] uppercase shadow-lg active:bg-rose-900">Penalty</button>
+                    <button onclick="doRecord()" class="flex-[3] bg-blue-700 text-white py-3 rounded-xl font-black text-md shadow-lg uppercase">Record</button>
+                    <button onclick="doPenalty()" class="flex-1 btn-penalty rounded-xl font-black text-[10px] uppercase shadow-lg">Penalty</button>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="doHoled()" class="flex-[3] bg-emerald-600 text-white py-3 rounded-xl font-black uppercase shadow-md text-sm active:bg-emerald-700">✓ Holed</button>
+                    <button onclick="doHoled()" class="flex-[3] bg-emerald-600 text-white py-3 rounded-xl font-black uppercase shadow-md text-sm">✓ Holed</button>
                     <button onclick="doUndo()" class="flex-1 bg-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase">Undo</button>
                 </div>
             </div>
@@ -60,9 +60,9 @@
             <div id="v-trends-content">
                 <div class="card p-4 mb-4"><canvas id="main-chart"></canvas></div>
                 <div id="roadmap-box" class="card p-5 bg-blue-900 text-white mb-6"></div>
-                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1 text-center italic">Last 5 Rounds (Rolling)</h3>
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1 text-center">Rolling 5-Round Detail</h3>
                 <div id="round-history" class="space-y-2 mb-10"></div>
-                <button onclick="doWipe()" class="w-full text-[10px] font-bold text-slate-400 uppercase py-6 tracking-widest opacity-50">Wipe All Data</button>
+                <button onclick="doWipe()" class="w-full text-[10px] font-bold text-slate-400 uppercase py-6 tracking-widest opacity-50">Wipe Data</button>
             </div>
         </div>
     </div>
@@ -73,6 +73,7 @@
         var hole = 1;
         var chart = null;
         var expRound = null;
+        var expHole = null;
 
         var table = {
             'Tee': { 500:4.6, 400:4.4, 350:4.2, 200:3.6, 150:3.3, 0:0 },
@@ -125,17 +126,11 @@
         }
 
         function doPenalty() {
-            var type = confirm("Is this Out of Bounds / Stroke & Distance? (Cancel for Lateral/Water drop)");
+            var type = confirm("OB / Lost Ball? (Cancel for Penalty Area/Water)");
             if (shots.length === 0) return;
             var last = shots[shots.length-1];
-            
-            if (type) { // OB - Stroke and Distance
-                last.sg = -2.0; 
-                last.label = "OB/Lost";
-            } else { // Lateral / Penalty Area
-                last.sg = -1.0;
-                last.label = "Penalty Area";
-            }
+            if (type) { last.sg = -2.0; last.label = "OB/S&D"; } 
+            else { last.sg = -1.0; last.label = "Hazard"; }
             ui();
         }
 
@@ -148,6 +143,7 @@
             hole++;
             document.getElementById('h-label').innerText = 'Hole ' + hole;
             setL('Tee');
+            expHole = null;
             ui();
         }
 
@@ -159,17 +155,37 @@
             ui();
         }
 
+        function toggleHole(n) { expHole = (expHole === n) ? null : n; ui(); }
+
         function ui() {
             var list = document.getElementById('s-list');
             var html = '';
+            var holeData = {};
             shots.forEach(s => {
-                var isNeg = s.sg < 0;
-                var color = s.sg > 0 ? 'text-emerald-600' : (isNeg ? 'text-rose-500' : 'text-slate-400');
-                var lbl = s.label ? ` <span class="bg-rose-100 text-rose-700 text-[8px] px-1 rounded">${s.label}</span>` : '';
-                html += `<div class="card p-4 flex justify-between items-center text-sm mb-1.5 border-l-4 border-blue-500">
-                    <span><b class="text-blue-700 text-[10px] w-8 inline-block italic">H${s.hole}</b> ${s.lie} (${s.dist}${s.lie==='Green'?'ft':'y'})${lbl}</span>
-                    <span class="font-black font-mono ${color}">${s.sg !== null ? (s.sg > 0 ? '+' : '') + s.sg.toFixed(2) : '--'}</span>
-                </div>`;
+                if (!holeData[s.hole]) holeData[s.hole] = { shots: [], total: 0 };
+                holeData[s.hole].shots.push(s);
+                if (s.sg !== null) holeData[s.hole].total += s.sg;
+            });
+            Object.keys(holeData).forEach(hNum => {
+                var h = holeData[hNum];
+                var n = parseInt(hNum);
+                var isExp = (n == hole || n == expHole);
+                if (isExp) {
+                    html += `<div onclick="toggleHole(${n})" class="text-[10px] font-bold text-blue-500 uppercase mt-4 mb-1 px-1 cursor-pointer">Hole ${hNum} Details ↑</div>`;
+                    h.shots.forEach(s => {
+                        var color = s.sg > 0 ? 'text-emerald-600' : (s.sg < 0 ? 'text-rose-500' : 'text-slate-400');
+                        var lbl = s.label ? ` <span class="bg-rose-100 text-rose-700 text-[8px] px-1 rounded">${s.label}</span>` : '';
+                        html += `<div class="card p-3 flex justify-between items-center text-xs mb-1 border-l-4 border-blue-500">
+                            <span>${s.lie} (${s.dist}${s.lie==='Green'?'ft':'y'})${lbl}${s.holed?' ✓':''}</span>
+                            <span class="font-mono font-bold ${color}">${s.sg !== null ? (s.sg > 0 ? '+' : '') + s.sg.toFixed(2) : '--'}</span>
+                        </div>`;
+                    });
+                } else {
+                    html += `<div onclick="toggleHole(${n})" class="card p-3 flex justify-between items-center mb-1 opacity-60">
+                        <span class="text-[10px] font-bold uppercase text-slate-500">Hole ${hNum} Summary</span>
+                        <span class="text-xs font-black ${h.total >= 0 ? 'text-emerald-600' : 'text-rose-500'}">SG: ${h.total.toFixed(2)}</span>
+                    </div>`;
+                }
             });
             list.innerHTML = html;
         }
@@ -180,45 +196,7 @@
             shots.forEach(s => { if(s.sg !== null) t[s.cat] += s.sg; });
             h.unshift(t);
             localStorage.setItem('sg_v11_final', JSON.stringify(h.slice(0, 5)));
-            shots = []; hole = 1;
+            shots = []; hole = 1; expHole = null;
             document.getElementById('s-btn').classList.add('hidden');
             ui();
-            alert("Rolling 5 Updated!");
-        }
-
-        function renderTrends() {
-            var h = JSON.parse(localStorage.getItem('sg_v11_final') || '[]');
-            if (h.length === 0) return;
-            var avg = { OTT:0, APP:0, SHG:0, PUT:0 };
-            h.forEach(r => { avg.OTT += r.OTT; avg.APP += r.APP; avg.SHG += r.SHG; avg.PUT += r.PUT; });
-            var count = h.length;
-            avg.OTT /= count; avg.APP /= count; avg.SHG /= count; avg.PUT /= count;
-            if (chart) chart.destroy();
-            chart = new Chart(document.getElementById('main-chart'), {
-                type: 'bar',
-                data: {
-                    labels: ['OTT', 'APP', 'SHG', 'PUT'],
-                    datasets: [{ data: [avg.OTT, avg.APP, avg.SHG, avg.PUT], backgroundColor: '#1d4ed8' }]
-                },
-                options: { plugins: { legend: false } }
-            });
-            var worst = ['OTT', 'APP', 'SHG', 'PUT'].reduce((a, b) => avg[a] < avg[b] ? a : b);
-            document.getElementById('roadmap-box').innerHTML = `<p class="text-xs uppercase font-bold opacity-70">Rolling 5 Leak</p><p class="text-xl font-black uppercase">${worst} Improvement</p>`;
-            var histHtml = '';
-            h.forEach((r, idx) => {
-                var total = r.OTT+r.APP+r.SHG+r.PUT;
-                histHtml += `<div onclick="toggleR(${idx})" class="card p-4 ${expRound===idx?'border-blue-500':'opacity-60'}">
-                    <div class="flex justify-between items-center text-xs font-bold">
-                        <span>Round ${h.length - idx}</span><span class="${total>=0?'text-emerald-600':'text-rose-500'}">SG: ${total.toFixed(2)}</span>
-                    </div>
-                    ${expRound===idx?`<div class="grid grid-cols-2 gap-2 mt-2 pt-2 border-t text-[10px] font-mono"><div>Tee: ${r.OTT.toFixed(2)}</div><div>App: ${r.APP.toFixed(2)}</div><div>Short: ${r.SHG.toFixed(2)}</div><div>Putt: ${r.PUT.toFixed(2)}</div></div>`:''}
-                </div>`;
-            });
-            document.getElementById('round-history').innerHTML = histHtml;
-        }
-
-        function toggleR(i) { expRound = (expRound === i) ? null : renderTrends(); }
-        function doWipe() { if(confirm("Clear?")) { localStorage.removeItem('sg_v11_final'); location.reload(); } }
-    </script>
-</body>
-</html>
+            alert("Rolling 5 Saved!");
