@@ -3,46 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SG Analyst - 10 HCP</title>
+    <title>SG Analytics V11.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-   <style>
-    body { 
-        background-color: #f1f5f9; 
-        -webkit-tap-highlight-color: transparent; 
-        display: flex;
-        flex-direction: column;
-        height: 100vh; /* Fill the whole screen */
-        overflow: hidden; /* Prevent the whole page from scrolling */
-    }
-    .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-    .active-lie { background-color: #1d4ed8 !important; color: white !important; font-weight: 800; }
-    
-    /* NEW: Scrollable list area */
-    #s-list { 
-        flex: 1; 
-        overflow-y: auto; 
-        padding-bottom: 100px; /* Space for the Save button */
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    /* NEW: Ensure the header and entry stay put */
-    .sticky-top {
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        background-color: #f1f5f9;
-        padding-bottom: 10px;
-    }
-</style>
+    <style>
+        body { background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .active-lie { background-color: #1d4ed8 !important; color: white !important; font-weight: 800; }
+        #s-list, #v-trends-content { flex: 1; overflow-y: auto; padding-bottom: 100px; -webkit-overflow-scrolling: touch; }
+        .sticky-top { position: sticky; top: 0; z-index: 50; background-color: #f1f5f9; padding-bottom: 10px; }
+        .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        .btn-penalty { background-color: #be123c; color: white; } /* Rose-700 */
+    </style>
 </head>
 <body class="p-4 font-sans text-slate-800">
-    <div class="max-w-md mx-auto flex flex-col h-full">
-        
+
+    <div class="max-w-md mx-auto flex flex-col h-full w-full">
         <div class="sticky-top">
             <div class="flex justify-between items-center mb-4">
                 <div>
-                    <h1 class="text-xl font-black text-blue-700 tracking-tighter uppercase">SG Analytics</h1>
+                    <h1 class="text-xl font-black text-blue-700 tracking-tighter uppercase">SG Analytics V11.1</h1>
                     <p id="h-label" class="text-[10px] font-bold text-slate-400 uppercase">Hole 1</p>
                 </div>
                 <div class="flex bg-slate-200 p-1 rounded-lg">
@@ -59,15 +39,14 @@
                     <button onclick="setL('Sand')" id="l-Sand" class="l-btn bg-slate-100 p-2 rounded-xl text-sm font-bold">Sand</button>
                     <button onclick="setL('Green')" id="l-Green" class="l-btn bg-slate-100 p-2 rounded-xl col-span-2 text-[10px] uppercase font-bold tracking-widest">Green (Feet)</button>
                 </div>
-
                 <input id="d-in" type="number" inputmode="numeric" placeholder="Distance" class="w-full text-3xl font-black border-b-4 border-slate-100 outline-none focus:border-blue-500 py-1 mb-4 text-center">
-                
-                <div class="space-y-2">
-                    <div class="flex gap-2">
-                        <button onclick="doRecord()" class="flex-[3] bg-blue-700 text-white py-3 rounded-xl font-black text-md shadow-lg uppercase">Record</button>
-                        <button onclick="doUndo()" class="flex-1 bg-slate-200 text-slate-600 rounded-xl font-bold text-xs">Undo</button>
-                    </div>
-                    <button onclick="doHoled()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-black uppercase shadow-md text-sm">✓ Ball is Holed</button>
+                <div class="flex gap-2 mb-2">
+                    <button onclick="doRecord()" class="flex-[3] bg-blue-700 text-white py-3 rounded-xl font-black text-md shadow-lg uppercase active:bg-blue-800">Record Shot</button>
+                    <button onclick="doPenalty()" class="flex-1 btn-penalty rounded-xl font-black text-[10px] uppercase shadow-lg active:bg-rose-900">Penalty</button>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="doHoled()" class="flex-[3] bg-emerald-600 text-white py-3 rounded-xl font-black uppercase shadow-md text-sm active:bg-emerald-700">✓ Holed</button>
+                    <button onclick="doUndo()" class="flex-1 bg-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase">Undo</button>
                 </div>
             </div>
         </div>
@@ -77,10 +56,14 @@
             <button onclick="doSave()" id="s-btn" class="hidden fixed bottom-6 left-4 right-4 max-w-md mx-auto bg-emerald-700 text-white py-4 rounded-2xl font-black uppercase shadow-2xl z-50">Save Round</button>
         </div>
 
-        <div id="v-trends" class="hidden overflow-y-auto">
-            <div class="card p-4 mb-4"><canvas id="main-chart"></canvas></div>
-            <div id="roadmap-box" class="card p-5 bg-blue-900 text-white"></div>
-            <button onclick="doWipe()" class="w-full text-[10px] font-bold text-slate-400 uppercase py-10 tracking-widest">Wipe All Data</button>
+        <div id="v-trends" class="hidden flex-1 flex flex-col overflow-hidden">
+            <div id="v-trends-content">
+                <div class="card p-4 mb-4"><canvas id="main-chart"></canvas></div>
+                <div id="roadmap-box" class="card p-5 bg-blue-900 text-white mb-6"></div>
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1 text-center italic">Last 5 Rounds (Rolling)</h3>
+                <div id="round-history" class="space-y-2 mb-10"></div>
+                <button onclick="doWipe()" class="w-full text-[10px] font-bold text-slate-400 uppercase py-6 tracking-widest opacity-50">Wipe All Data</button>
+            </div>
         </div>
     </div>
 
@@ -89,35 +72,28 @@
         var lie = 'Tee';
         var hole = 1;
         var chart = null;
-        var expandedHole = null;
+        var expRound = null;
 
         var table = {
-            'Tee': { 500:4.6, 400:4.3, 350:4.1, 200:3.6, 150:3.3, 0:0 },
-            'Fairway': { 500:4.5, 400:4.2, 300:3.8, 200:3.4, 150:3.2, 100:2.9, 50:2.7, 20:2.5, 0:0 },
-            'Rough': { 500:4.7, 400:4.4, 300:4.1, 200:3.7, 150:3.5, 100:3.2, 50:2.9, 20:2.7, 0:0 },
-            'Sand': { 100:3.5, 50:3.2, 30:3.0, 20:2.8, 10:2.6, 0:0 },
-            'Green': { 100:2.5, 60:2.3, 30:2.0, 20:1.85, 10:1.6, 5:1.3, 3:1.1, 1:1.05, 0:0 }
+            'Tee': { 500:4.6, 400:4.4, 350:4.2, 200:3.6, 150:3.3, 0:0 },
+            'Fairway': { 500:4.5, 400:4.2, 300:3.8, 200:3.4, 150:3.1, 100:2.9, 50:2.7, 20:2.5, 0:0 },
+            'Rough': { 500:4.7, 400:4.4, 300:4.0, 200:3.6, 150:3.3, 100:3.1, 50:2.9, 20:2.7, 0:0 },
+            'Sand': { 100:3.6, 50:3.2, 30:3.0, 20:2.8, 10:2.5, 0:0 },
+            'Green': { 60:2.3, 30:2.0, 20:1.85, 10:1.6, 5:1.3, 3:1.1, 1:1.0, 0:0 }
         };
 
         function goView(v) {
             document.getElementById('v-entry').classList.toggle('hidden', v !== 'entry');
+            document.getElementById('v-entry-controls').classList.toggle('hidden', v !== 'entry');
             document.getElementById('v-trends').classList.toggle('hidden', v !== 'trends');
             document.getElementById('nav-entry').classList.toggle('bg-white', v === 'entry');
             document.getElementById('nav-trends').classList.toggle('bg-white', v === 'trends');
-            if (v === 'trends') renderChart();
-            else document.getElementById('h-label').innerText = 'Hole ' + hole;
-        }
-
-        function toggleHole(n) {
-            if (n === hole) return;
-            expandedHole = (expandedHole === n) ? null : n;
-            ui();
+            if (v === 'trends') renderTrends();
         }
 
         function setL(l) {
             lie = l;
-            var btns = document.getElementsByClassName('l-btn');
-            for(var i=0; i<btns.length; i++) { btns[i].classList.remove('active-lie'); }
+            document.querySelectorAll('.l-btn').forEach(b => b.classList.remove('active-lie'));
             document.getElementById('l-' + l).classList.add('active-lie');
         }
 
@@ -127,9 +103,7 @@
             if (d >= ks[0]) return dta[ks[0]];
             if (d <= ks[ks.length-1]) return dta[ks[ks.length-1]];
             for (var i=0; i<ks.length-1; i++) {
-                if (d <= ks[i] && d >= ks[i+1]) {
-                    return dta[ks[i+1]] + (dta[ks[i]]-dta[ks[i+1]]) * (d-ks[i+1]) / (ks[i]-ks[i+1]);
-                }
+                if (d <= ks[i] && d >= ks[i+1]) return dta[ks[i+1]] + (dta[ks[i]]-dta[ks[i+1]]) * (d-ks[i+1]) / (ks[i]-ks[i+1]);
             }
             return 2.5;
         }
@@ -139,17 +113,29 @@
             if (!inp.value) return;
             var d = parseFloat(inp.value);
             var ev = getVal(lie, d);
-            // Sand shots are typically SHG unless they are fairway bunkers (long)
             var ct = (lie === 'Tee') ? 'OTT' : (lie === 'Green' ? 'PUT' : (d <= 100 ? 'SHG' : 'APP'));
-
             if (shots.length > 0) {
                 var prev = shots[shots.length-1];
-                if (!prev.holed) prev.sg = prev.ev - ev - 1;
+                if (!prev.holed && prev.sg === null) prev.sg = prev.ev - ev - 1;
             }
-
             shots.push({ lie: lie, dist: d, ev: ev, cat: ct, sg: null, hole: hole, holed: false });
             inp.value = '';
             document.getElementById('s-btn').classList.remove('hidden');
+            ui();
+        }
+
+        function doPenalty() {
+            var type = confirm("Is this Out of Bounds / Stroke & Distance? (Cancel for Lateral/Water drop)");
+            if (shots.length === 0) return;
+            var last = shots[shots.length-1];
+            
+            if (type) { // OB - Stroke and Distance
+                last.sg = -2.0; 
+                last.label = "OB/Lost";
+            } else { // Lateral / Penalty Area
+                last.sg = -1.0;
+                last.label = "Penalty Area";
+            }
             ui();
         }
 
@@ -162,17 +148,13 @@
             hole++;
             document.getElementById('h-label').innerText = 'Hole ' + hole;
             setL('Tee');
-            expandedHole = null;
             ui();
         }
 
         function doUndo() {
             if (shots.length === 0) return;
             var p = shots.pop();
-            if (p.holed) {
-                hole--;
-                document.getElementById('h-label').innerText = 'Hole ' + hole;
-            }
+            if (p.holed) { hole--; document.getElementById('h-label').innerText = 'Hole ' + hole; }
             if (shots.length > 0) shots[shots.length-1].sg = null;
             ui();
         }
@@ -180,87 +162,63 @@
         function ui() {
             var list = document.getElementById('s-list');
             var html = '';
-            var holeData = {};
-
             shots.forEach(s => {
-                if (!holeData[s.hole]) holeData[s.hole] = { shots: [], totalSG: 0 };
-                holeData[s.hole].shots.push(s);
-                if (s.sg !== null) holeData[s.hole].totalSG += s.sg;
-            });
-
-            Object.keys(holeData).forEach(hNum => {
-                var h = holeData[hNum];
-                var n = parseInt(hNum);
-                var isExpanded = (n === hole || n === expandedHole);
-
-                if (isExpanded) {
-                    var label = (n === hole) ? 'Hole ' + hNum + ' (Active)' : 'Hole ' + hNum + ' (Review)';
-                    html += '<div onclick="toggleHole('+n+')" class="text-[10px] font-bold text-blue-500 uppercase mt-6 mb-2 tracking-widest cursor-pointer">'+label+' ↑</div>';
-                    h.shots.forEach(s => {
-                        var isPos = s.sg > 0;
-                        var color = isPos ? 'text-emerald-600' : (s.sg < 0 ? 'text-rose-500' : 'text-slate-400');
-                        var sgText = s.sg !== null ? (isPos ? '+' : '') + s.sg.toFixed(2) : '--';
-                        var hb = s.holed ? '<span class="ml-2 bg-emerald-100 text-emerald-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase">Holed</span>' : '';
-                        html += '<div class="card p-4 flex justify-between items-center text-sm mb-1.5 border-l-4 ' + (n === hole ? 'border-blue-500' : 'border-slate-300') + '">' +
-                            '<span><b class="text-blue-700 text-[10px] w-8 inline-block font-black uppercase">' + s.cat + '</b> ' + s.lie + ' <span class="text-slate-400 ml-1">(' + s.dist + (s.lie==='Green'?'ft':'y') + ')</span>' + hb + '</span>' +
-                            '<span class="font-black font-mono ' + color + '">' + sgText + '</span></div>';
-                    });
-                } else {
-                    var totalSG = h.totalSG;
-                    var color = totalSG > 0 ? 'text-emerald-600' : (totalSG < 0 ? 'text-rose-500' : 'text-slate-400');
-                    html += '<div onclick="toggleHole('+n+')" class="flex justify-between items-center bg-white border border-slate-200 px-4 py-3 rounded-xl mt-2 cursor-pointer shadow-sm hover:bg-slate-50">' +
-                        '<span class="text-[10px] font-bold text-slate-500 uppercase">Hole ' + hNum + ' Review</span>' +
-                        '<span class="text-xs font-black ' + color + '">SG: ' + (totalSG > 0 ? '+' : '') + totalSG.toFixed(2) + '</span>' +
-                        '</div>';
-                }
+                var isNeg = s.sg < 0;
+                var color = s.sg > 0 ? 'text-emerald-600' : (isNeg ? 'text-rose-500' : 'text-slate-400');
+                var lbl = s.label ? ` <span class="bg-rose-100 text-rose-700 text-[8px] px-1 rounded">${s.label}</span>` : '';
+                html += `<div class="card p-4 flex justify-between items-center text-sm mb-1.5 border-l-4 border-blue-500">
+                    <span><b class="text-blue-700 text-[10px] w-8 inline-block italic">H${s.hole}</b> ${s.lie} (${s.dist}${s.lie==='Green'?'ft':'y'})${lbl}</span>
+                    <span class="font-black font-mono ${color}">${s.sg !== null ? (s.sg > 0 ? '+' : '') + s.sg.toFixed(2) : '--'}</span>
+                </div>`;
             });
             list.innerHTML = html;
-            if (holeData[hole]) window.scrollTo(0, document.body.scrollHeight);
         }
 
         function doSave() {
-            var h = JSON.parse(localStorage.getItem('sg_v9_final') || '[]');
-            var t = { OTT:0, APP:0, SHG:0, PUT:0 };
+            var h = JSON.parse(localStorage.getItem('sg_v11_final') || '[]');
+            var t = { date: new Date().toLocaleDateString(), OTT:0, APP:0, SHG:0, PUT:0 };
             shots.forEach(s => { if(s.sg !== null) t[s.cat] += s.sg; });
-            h.push(t);
-            localStorage.setItem('sg_v9_final', JSON.stringify(h.slice(-20)));
-            shots = []; hole = 1; expandedHole = null;
-            document.getElementById('h-label').innerText = 'Hole 1';
+            h.unshift(t);
+            localStorage.setItem('sg_v11_final', JSON.stringify(h.slice(0, 5)));
+            shots = []; hole = 1;
             document.getElementById('s-btn').classList.add('hidden');
             ui();
-            alert("Round Logged!");
+            alert("Rolling 5 Updated!");
         }
 
-        function renderChart() {
-            var h = JSON.parse(localStorage.getItem('sg_v9_final') || '[]');
-            var count = h.length;
-            if (count === 0) {
-                document.getElementById('h-label').innerText = 'No Data';
-                document.getElementById('roadmap-box').innerHTML = '<p class="text-center opacity-50 italic">Save a round to see your roadmap.</p>';
-                return;
-            }
+        function renderTrends() {
+            var h = JSON.parse(localStorage.getItem('sg_v11_final') || '[]');
+            if (h.length === 0) return;
             var avg = { OTT:0, APP:0, SHG:0, PUT:0 };
             h.forEach(r => { avg.OTT += r.OTT; avg.APP += r.APP; avg.SHG += r.SHG; avg.PUT += r.PUT; });
+            var count = h.length;
             avg.OTT /= count; avg.APP /= count; avg.SHG /= count; avg.PUT /= count;
-            document.getElementById('h-label').innerText = 'Averages over ' + count + ' Rounds';
-            var ctx = document.getElementById('main-chart').getContext('2d');
             if (chart) chart.destroy();
-            var cats = ['OTT', 'APP', 'SHG', 'PUT'];
-            var vals = [avg.OTT, avg.APP, avg.SHG, avg.PUT];
-            chart = new Chart(ctx, {
+            chart = new Chart(document.getElementById('main-chart'), {
                 type: 'bar',
                 data: {
-                    labels: ['Tee', 'Appr', 'Short', 'Putt'],
-                    datasets: [{ data: vals, backgroundColor: vals.map(v => v >= 0 ? '#10b981' : '#f43f5e') }]
+                    labels: ['OTT', 'APP', 'SHG', 'PUT'],
+                    datasets: [{ data: [avg.OTT, avg.APP, avg.SHG, avg.PUT], backgroundColor: '#1d4ed8' }]
                 },
-                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                options: { plugins: { legend: false } }
             });
-            var worst = cats.reduce((a, b) => avg[a] < avg[b] ? a : b);
-            var names = { OTT:'Driving', APP:'Irons', SHG:'Wedges', PUT:'Putting' };
-            document.getElementById('roadmap-box').innerHTML = '<p class="text-lg font-black uppercase tracking-tight">Trend Leak: ' + names[worst] + '</p><p class="text-xs opacity-90">Based on ' + count + ' rounds, gain <b>' + (0.95 - avg[worst]).toFixed(2) + ' strokes</b> to hit 5-HCP level.</p>';
+            var worst = ['OTT', 'APP', 'SHG', 'PUT'].reduce((a, b) => avg[a] < avg[b] ? a : b);
+            document.getElementById('roadmap-box').innerHTML = `<p class="text-xs uppercase font-bold opacity-70">Rolling 5 Leak</p><p class="text-xl font-black uppercase">${worst} Improvement</p>`;
+            var histHtml = '';
+            h.forEach((r, idx) => {
+                var total = r.OTT+r.APP+r.SHG+r.PUT;
+                histHtml += `<div onclick="toggleR(${idx})" class="card p-4 ${expRound===idx?'border-blue-500':'opacity-60'}">
+                    <div class="flex justify-between items-center text-xs font-bold">
+                        <span>Round ${h.length - idx}</span><span class="${total>=0?'text-emerald-600':'text-rose-500'}">SG: ${total.toFixed(2)}</span>
+                    </div>
+                    ${expRound===idx?`<div class="grid grid-cols-2 gap-2 mt-2 pt-2 border-t text-[10px] font-mono"><div>Tee: ${r.OTT.toFixed(2)}</div><div>App: ${r.APP.toFixed(2)}</div><div>Short: ${r.SHG.toFixed(2)}</div><div>Putt: ${r.PUT.toFixed(2)}</div></div>`:''}
+                </div>`;
+            });
+            document.getElementById('round-history').innerHTML = histHtml;
         }
 
-        function doWipe() { if(confirm("Clear?")) { localStorage.removeItem('sg_v9_final'); location.reload(); } }
+        function toggleR(i) { expRound = (expRound === i) ? null : renderTrends(); }
+        function doWipe() { if(confirm("Clear?")) { localStorage.removeItem('sg_v11_final'); location.reload(); } }
     </script>
 </body>
 </html>
