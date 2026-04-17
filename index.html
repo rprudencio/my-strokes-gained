@@ -41,12 +41,12 @@
                 </div>
                 <input id="d-in" type="number" inputmode="numeric" placeholder="Distance" class="w-full text-3xl font-black border-b-4 border-slate-100 outline-none focus:border-blue-500 py-1 mb-4 text-center">
                 <div class="flex gap-2 mb-2">
-                    <button onclick="doRecord()" class="flex-[3] bg-blue-700 text-white py-3 rounded-xl font-black text-md shadow-lg uppercase">Record</button>
-                    <button onclick="doPenalty()" class="flex-1 btn-penalty rounded-xl font-black text-[10px] uppercase shadow-lg">Penalty</button>
+                    <button onclick="doRecord()" class="flex-[3] bg-blue-700 text-white py-3 rounded-xl font-black text-md shadow-lg uppercase active:opacity-80">Record</button>
+                    <button onclick="doPenalty()" class="flex-1 btn-penalty rounded-xl font-black text-[10px] uppercase shadow-lg active:opacity-80">Penalty</button>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="doHoled()" class="flex-[3] bg-emerald-600 text-white py-3 rounded-xl font-black uppercase shadow-md text-sm">✓ Holed</button>
-                    <button onclick="doUndo()" class="flex-1 bg-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase">Undo</button>
+                    <button onclick="doHoled()" class="flex-[3] bg-emerald-600 text-white py-3 rounded-xl font-black uppercase shadow-md text-sm active:opacity-80">✓ Holed</button>
+                    <button onclick="doUndo()" class="flex-1 bg-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase active:opacity-80">Undo</button>
                 </div>
             </div>
         </div>
@@ -126,8 +126,8 @@
         }
 
         function doPenalty() {
-            var type = confirm("OB / Lost Ball? (Cancel for Penalty Area/Water)");
             if (shots.length === 0) return;
+            var type = confirm("OB / Lost Ball? (Cancel for Penalty Area/Water)");
             var last = shots[shots.length-1];
             if (type) { last.sg = -2.0; last.label = "OB/S&D"; } 
             else { last.sg = -1.0; last.label = "Hazard"; }
@@ -155,7 +155,7 @@
             ui();
         }
 
-        function toggleHole(n) { expHole = (expHole === n) ? null : n; ui(); }
+        function toggleHole(n) { expHole = (expHole == n) ? null : n; ui(); }
 
         function ui() {
             var list = document.getElementById('s-list');
@@ -168,10 +168,9 @@
             });
             Object.keys(holeData).forEach(hNum => {
                 var h = holeData[hNum];
-                var n = parseInt(hNum);
-                var isExp = (n == hole || n == expHole);
+                var isExp = (hNum == hole || hNum == expHole);
                 if (isExp) {
-                    html += `<div onclick="toggleHole(${n})" class="text-[10px] font-bold text-blue-500 uppercase mt-4 mb-1 px-1 cursor-pointer">Hole ${hNum} Details ↑</div>`;
+                    html += `<div onclick="toggleHole(${hNum})" class="text-[10px] font-bold text-blue-500 uppercase mt-4 mb-1 px-1">Hole ${hNum} Details ↑</div>`;
                     h.shots.forEach(s => {
                         var color = s.sg > 0 ? 'text-emerald-600' : (s.sg < 0 ? 'text-rose-500' : 'text-slate-400');
                         var lbl = s.label ? ` <span class="bg-rose-100 text-rose-700 text-[8px] px-1 rounded">${s.label}</span>` : '';
@@ -181,7 +180,7 @@
                         </div>`;
                     });
                 } else {
-                    html += `<div onclick="toggleHole(${n})" class="card p-3 flex justify-between items-center mb-1 opacity-60">
+                    html += `<div onclick="toggleHole(${hNum})" class="card p-3 flex justify-between items-center mb-1 opacity-60">
                         <span class="text-[10px] font-bold uppercase text-slate-500">Hole ${hNum} Summary</span>
                         <span class="text-xs font-black ${h.total >= 0 ? 'text-emerald-600' : 'text-rose-500'}">SG: ${h.total.toFixed(2)}</span>
                     </div>`;
@@ -198,5 +197,16 @@
             localStorage.setItem('sg_v11_final', JSON.stringify(h.slice(0, 5)));
             shots = []; hole = 1; expHole = null;
             document.getElementById('s-btn').classList.add('hidden');
+            document.getElementById('h-label').innerText = 'Hole 1';
             ui();
             alert("Rolling 5 Saved!");
+        }
+
+        function renderTrends() {
+            var h = JSON.parse(localStorage.getItem('sg_v11_final') || '[]');
+            if (h.length === 0) {
+                document.getElementById('round-history').innerHTML = '<p class="text-center text-xs opacity-50 mt-10 italic">No rounds logged yet.</p>';
+                return;
+            }
+            var avg = { OTT:0, APP:0, SHG:0, PUT:0 };
+            h.forEach(r => { avg.OTT += r.OTT; avg.APP += r.APP; avg
