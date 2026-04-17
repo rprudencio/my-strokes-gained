@@ -209,4 +209,49 @@
                 return;
             }
             var avg = { OTT:0, APP:0, SHG:0, PUT:0 };
-            h.forEach(r => { avg.OTT += r.OTT; avg.APP += r.APP; avg
+            h.forEach(r => { avg.OTT += r.OTT; avg.APP += r.APP; avg.SHG += r.SHG; avg.PUT += r.PUT; });
+            var count = h.length;
+            avg.OTT /= count; avg.APP /= count; avg.SHG /= count; avg.PUT /= count;
+
+            if (chart) chart.destroy();
+            var vals = [avg.OTT, avg.APP, avg.SHG, avg.PUT];
+            chart = new Chart(document.getElementById('main-chart'), {
+                type: 'bar',
+                data: {
+                    labels: ['OTT', 'APP', 'SHG', 'PUT'],
+                    datasets: [{ data: vals, backgroundColor: vals.map(v => v >= 0 ? '#10b981' : '#f43f5e') }]
+                },
+                options: { plugins: { legend: false } }
+            });
+
+            var worst = ['OTT', 'APP', 'SHG', 'PUT'].reduce((a, b) => avg[a] < avg[b] ? a : b);
+            var gainTo5 = (0.95 - avg[worst]).toFixed(2);
+            document.getElementById('roadmap-box').innerHTML = `
+                <p class="text-lg font-black uppercase italic">Focus: ${worst}</p>
+                <div class="mt-2 text-xs font-bold opacity-80">Gains needed for 5-HCP form: <span class="text-white text-sm">+${gainTo5}</span></div>`;
+
+            var histHtml = '';
+            h.forEach((r, idx) => {
+                var total = r.OTT+r.APP+r.SHG+r.PUT;
+                var isExp = expRound === idx;
+                histHtml += `<div onclick="toggleR(${idx})" class="card p-4 ${isExp?'border-blue-500 shadow-lg':'opacity-60'}">
+                    <div class="flex justify-between items-center text-xs font-bold">
+                        <span>Round ${h.length - idx} (${r.date})</span>
+                        <span class="${total>=0?'text-emerald-600':'text-rose-500'}">SG: ${total.toFixed(2)}</span>
+                    </div>
+                    ${isExp ? `<div class="grid grid-cols-2 gap-y-2 gap-x-4 mt-3 pt-3 border-t font-mono text-[10px]">
+                        <div class="flex justify-between"><span>OTT:</span><span class="${r.OTT>=0?'text-emerald-600':'text-rose-500'}">${r.OTT.toFixed(2)}</span></div>
+                        <div class="flex justify-between"><span>APP:</span><span class="${r.APP>=0?'text-emerald-600':'text-rose-500'}">${r.APP.toFixed(2)}</span></div>
+                        <div class="flex justify-between"><span>SHG:</span><span class="${r.SHG>=0?'text-emerald-600':'text-rose-500'}">${r.SHG.toFixed(2)}</span></div>
+                        <div class="flex justify-between"><span>PUT:</span><span class="${r.PUT>=0?'text-emerald-600':'text-rose-500'}">${r.PUT.toFixed(2)}</span></div>
+                    </div>` : ''}
+                </div>`;
+            });
+            document.getElementById('round-history').innerHTML = histHtml;
+        }
+
+        function toggleR(i) { expRound = (expRound === i) ? null : i; renderTrends(); }
+        function doWipe() { if(confirm("Clear All?")) { localStorage.removeItem('sg_v11_final'); location.reload(); } }
+    </script>
+</body>
+</html>
